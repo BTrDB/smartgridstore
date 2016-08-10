@@ -1,0 +1,13 @@
+[Unit]
+Description=MongoDB
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --name %p \
+  -v /srv/mongo:/data/db \
+  -p 27017:27017 \
+  mongo:3.2
+ExecStop=/usr/bin/docker stop -t 30 %p ; /usr/bin/docker rm -f %p
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME

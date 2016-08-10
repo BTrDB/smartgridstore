@@ -1,0 +1,27 @@
+[Unit]
+Description=Plotter
+StartLimitBurst=3
+StartLimitInterval=24h
+After=btrdb-XX_NODENAME.service
+After=plotter-metadata-XX_NODENAME.service
+
+[Service]
+Restart=always
+RestartSec=1m
+ExecStartPre=/usr/bin/docker pull immesys/mrplotter
+ExecStart=/usr/bin/docker run \
+  --name %p \
+  -m 6G \
+  -v /srv/mrplotter:/etc/mrplotter \
+  -v /srv/certs:/etc/letsencrypt \
+  -e DOMAIN=XX_DOMAIN \
+  -e BTRDB_IP=XX_BTRDB_IP \
+  -e METADATA_IP=XX_METADATA_IP \
+  -e MONGO_IP=XX_MONGO_IP \
+  -p 80:80 \
+  -p 443:443 \
+  immesys/mrplotter
+ExecStop=/usr/bin/docker stop -t 5 %p ; /usr/bin/docker rm -f %p
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME

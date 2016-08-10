@@ -1,0 +1,28 @@
+[Unit]
+Description=Ceph OSD
+StartLimitBurst=3
+StartLimitInterval=24h
+
+[Service]
+Restart=always
+RestartSec=1m
+TimeoutStartSec=1m
+ExecStartPre=/usr/bin/docker pull ceph/daemon:tag-build-master-jewel-ubuntu-16.04
+ExecStart=/usr/bin/docker run \
+  --name %p \
+  --net=host \
+  --privileged=true \
+  --pid=host \
+  -v /dev/:/dev/ \
+  -v /srv/ceph:/var/lib/ceph \
+  -e OSD_DEVICE=XX_DEVICE \
+  -e CLUSTER=XX_CLUSTER \
+  -e OSD_TYPE=activate \
+  -e KV_TYPE=etcd \
+  -e KV_IP=127.0.0.1 \
+  ceph/daemon:tag-build-master-jewel-ubuntu-16.04 osd
+
+ExecStop=/usr/bin/docker stop -t 5 %p ; /usr/bin/docker rm -f %p
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME

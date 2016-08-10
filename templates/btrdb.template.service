@@ -1,0 +1,22 @@
+[Unit]
+Description=BTrDB
+StartLimitBurst=3
+StartLimitInterval=24h
+After=mongo-XX_NODENAME.service
+
+[Service]
+Restart=always
+RestartSec=1m
+ExecStartPre=/usr/bin/docker pull immesys/btrdb-ceph-3.4
+ExecStart=/usr/bin/docker run \
+  --name %p \
+  -v /srv/btrdb:/etc/btrdb  \
+  -p 4410:4410 \
+  -p 9000:9000 \
+  -e BTRDB_MONGO_SERVER=XX_INTERNAL_IP:27017 \
+  -e BTRDB_STORAGE_PROVIDER=ceph \
+  immesys/btrdb-ceph-3.4
+ExecStop=/usr/bin/docker stop -t 60 %p ; /usr/bin/docker rm -f %p
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME

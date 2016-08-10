@@ -1,0 +1,23 @@
+[Unit]
+Description=Sync2Quasar
+StartLimitBurst=3
+StartLimitInterval=24h
+After=btrdb-XX_NODENAME.service
+
+[Service]
+Restart=always
+RestartSec=1m
+ExecStartPre=/usr/bin/docker pull immesys/btrdb-qs-sync
+ExecStart=/usr/bin/docker run \
+  --name %p \
+  -e BTRDB_ADDR=XX_NODENAME:4410 \
+  -e MONGO_ADDR=XX_NODENAME:27017 \
+  -e YTAG=300 \
+  -m 6G \
+  -v /srv/sync:/etc/sync \
+  immesys/btrdb-qs-sync
+
+ExecStop=/usr/bin/docker stop -t 60 %p ; /usr/bin/docker rm -f %p
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME

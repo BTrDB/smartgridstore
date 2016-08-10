@@ -1,0 +1,16 @@
+[Unit]
+Description=Plotter Certs
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/docker pull r.cal-sdb.org/plotter-mir
+ExecStartPre=-/usr/bin/docker stop -t 5 %p
+ExecStartPre=-/usr/bin/docker rm -f %p
+ExecStart=/usr/bin/docker run \
+  --name %p \
+  -v /srv/mrplotter:/etc/mrplotter \
+  -v /srv/certs:/etc/letsencrypt \
+  r.cal-sdb.org/plotter-mir renewcert
+
+[X-Fleet]
+MachineMetadata=n=miranda

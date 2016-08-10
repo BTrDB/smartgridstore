@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew cert once a day
+
+[Timer]
+OnCalendar=daily
+
+[X-Fleet]
+MachineMetadata=n=XX_NODENAME
