@@ -46,10 +46,12 @@ do
   fi
 done
 
+
 if [[ $DIRTY != 0 ]]; then
   echo -e "\033[34;1msome nodes were rebooted after updates. Wait a bit then rerun this script\033[0m"
   exit 1
 fi
+
 echo -e "\033[34;1minstalling docker, etcd and fleet\033[0m"
 INITIAL_CLUSTER=$(echo -n $INITIAL_CLUSTER | sed -e 's/[\/&]/\\&/g')
 for srv in $CLUSTER_INFO

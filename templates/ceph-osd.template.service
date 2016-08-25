@@ -20,6 +20,7 @@ ExecStart=/usr/bin/docker run \
   -e OSD_TYPE=activate \
   -e KV_TYPE=etcd \
   -e KV_IP=127.0.0.1 \
+  -e KV_PORT=2379 \
   ceph/daemon:tag-build-master-jewel-ubuntu-16.04 osd
 
 ExecStop=/usr/bin/docker stop -t 5 %p ; /usr/bin/docker rm -f %p

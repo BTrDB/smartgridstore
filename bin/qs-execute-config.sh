@@ -128,16 +128,10 @@ function FORMAT_DISK {
     -e OSD_FORCE_ZAP=1 \
     -e KV_TYPE=etcd \
     -e KV_IP=127.0.0.1 \
+    -e KV_PORT=2379 \
     ceph/daemon:tag-build-master-jewel-ubuntu-16.04 osd
 }
-function CREATE_CEPH_POOL {
-  poolname="$1"
-  args="$@"
-  ssh -t $SSH_USER@$TUNNEL_IP "sudo /usr/bin/docker run -it \
-    immesys/btrdb-qs-wb ceph osd pool delete $poolname $poolname --yes-i-really-really-mean-it" || true
-  ssh -t $SSH_USER@$TUNNEL_IP "sudo /usr/bin/docker run -it \
-    immesys/btrdb-qs-wb ceph osd pool create $@"
-}
+
 function GEN_SSL_CERT {
   echo -e "${FS}generating ssl cert for $1 ${FE}"
   ssh -t $SSH_USER@$1 "sudo /usr/bin/docker run -it -e DOMAIN=$1 -p 443:443 -p 80:80 \
@@ -210,21 +204,16 @@ function GEN_MONGODB {
 function GEN_RECEIVER {
   echo -e "${FS}skipping GEN_RECEIVER (done already)${FE}"
 }
-function FORMAT_BTRDB {
-  nodename="$1"
-  eip="$2"
-  mongo="$3"
-  ssh -t $SSH_USER@$eip sudo /usr/bin/docker run -it \
-    -v /srv/btrdb:/etc/btrdb  \
-    -p 4410:4410 \
-    -p 9000:9000 \
-    -e BTRDB_MONGO_SERVER=$mongo:27017 \
-    -e BTRDB_STORAGE_PROVIDER=ceph \
-    immesys/btrdb-ceph-3.4 makedb
-}
+
 function CREATE_CEPH_POOL {
-  echo -e "${FS}skipping CREATE_CEPH_POOL (done already)${FE}"
+  poolname="$1"
+  args="$@"
+  ssh -t $SSH_USER@$TUNNEL_IP "sudo /usr/bin/docker run -it -e KV_PORT=2379 \
+    immesys/btrdb-qs-wb ceph osd pool delete $poolname $poolname --yes-i-really-really-mean-it" || true
+  ssh -t $SSH_USER@$TUNNEL_IP "sudo /usr/bin/docker run -it -e KV_PORT=2379 \
+    immesys/btrdb-qs-wb ceph osd pool create $@"
 }
+
 function GEN_METADATA {
   echo -e "${FS}skipping GEN_METADATA (done already)${FE}"
 }
@@ -233,6 +222,26 @@ function GEN_PLOTTER {
 }
 function GEN_SSL_CERT {
   echo -e "${FS}skipping GEN_SSL_CERT (done already)${FE}"
+}
+
+source $CFG
+
+function FORMAT_BTRDB {
+  nodename="$1"
+  eip="$2"
+  mongo="$3"
+  ssh -t $SSH_USER@$eip sudo /usr/bin/docker run -it \
+    -v /srv/btrdb:/etc/btrdb  \
+    -p 4410:4410 \
+    -p 9000:9000 \
+    -e KV_PORT=2379 \
+    -e BTRDB_MONGO_SERVER=$mongo:27017 \
+    -e BTRDB_STORAGE_PROVIDER=ceph \
+    immesys/btrdb-ceph-3.4 makedb
+}
+
+function CREATE_CEPH_POOL {
+  echo -e "${FS}skipping CREATE_CEPH_POOL(done already)${FE}"
 }
 
 source $CFG

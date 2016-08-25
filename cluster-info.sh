@@ -1,16 +1,31 @@
 # This file contains the information about your servers.
-# this script is only supported if you do not change this
-# information half way through
+# The tools assume that you only modify this file
+# once, at the beginning, so double check it for correctness.
 
 # clusterinfo is a space separated set of tuples of
-# nodename,public_ip,internal_ip
-CLUSTER_INFO="n1,52.40.191.214,172.30.0.56 "
-CLUSTER_INFO+="n2,52.10.14.135,172.30.0.57 "
-CLUSTER_INFO+="n3,52.25.75.35,172.30.0.58"
+# nodename,public_ip,private_ip
+CLUSTER_INFO="node0,128.32.3.10,10.0.0.10 "
+CLUSTER_INFO+="node1,128.32.3.11,10.0.0.11 "
+CLUSTER_INFO+="node2,128.32.3.12,10.0.0.12 "
 export CLUSTER_INFO
-export IDENTITY=$HOME/.ssh/btrdb-qs.pem
-export TUNNEL_IP=52.40.191.214
+
+# This is the ssh key file that enables login. If you used
+# EC2, this will likely end in .pem
+export IDENTITY=$HOME/.ssh/id_rsa
+
+# This can be any of the above three nodes. It is the machine
+# that will be connected to when controlling the cluster
+export TUNNEL_IP=128.32.3.10
+
+# This is the username to use. It must be able to log in without
+# a password using $IDENTITY above, and must be able to do passwordless
+# sudo (default on EC2)
 export SSH_USER=ubuntu
-export DOMAIN=testqs3.cal-sdb.org
+
+# This is the domain name you want to set up for your master server
+# you can leave it as-is if you are not setting up the plotter
+export DOMAIN=my.plotter.domain
+
+# This is required for some of the tools
 eval "$(ssh-agent -s)" 2>&1 >/dev/null
 ssh-add $IDENTITY
