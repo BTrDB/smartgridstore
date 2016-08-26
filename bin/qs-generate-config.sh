@@ -51,15 +51,15 @@ do
     echo "  # format the database (args: nodename, externalip, mongo)" >> $CFG
     echo "  FORMAT_BTRDB $nodename $eip $iip" >> $CFG
     echo "  # install the metadata shim (args: nodename, mongo)" >> $CFG
-    echo "  #GEN_METADATA $nodename $iip" >> $CFG
+    echo "  GEN_METADATA $nodename $iip" >> $CFG
     echo "  # install the upmu data receiver daemon (args: nodename, mongo)" >> $CFG
-    echo "  #GEN_RECEIVER $nodename $iip" >> $CFG
+    echo "  GEN_RECEIVER $nodename $iip" >> $CFG
     echo "  # install the upmu data loader (args: nodename, mongo, btrdb)" >> $CFG
     echo "  #GEN_SYNC2Q $nodename $iip $iip" >> $CFG
     echo "  # generate an SSL certificate for the plotter (args: domain)" >> $CFG
-    echo "  #GEN_SSL_CERT $DOMAIN" >> $CFG
+    echo "  GEN_SSL_CERT $DOMAIN" >> $CFG
     echo "  # install the plotter (args: nodename, metadata, btrdb)" >> $CFG
-    echo "  #GEN_PLOTTER $nodename $DOMAIN $iip $iip $iip" >> $CFG
+    echo "  GEN_PLOTTER $nodename $DOMAIN $iip $iip $iip" >> $CFG
     echo "" >> $CFG
     DONE_APPS=1
   fi

@@ -27,5 +27,6 @@ export SSH_USER=ubuntu
 export DOMAIN=my.plotter.domain
 
 # This is required for some of the tools
+chmod 0600 $IDENTITY
 eval "$(ssh-agent -s)" 2>&1 >/dev/null
 ssh-add $IDENTITY
