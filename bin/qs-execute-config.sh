@@ -26,9 +26,6 @@ then
   fi
 fi
 
-rm -f units/*.service
-rm -f units/*.bak
-
 function GEN_MON {
   nodename="$1"
   iip="$2"
@@ -85,6 +82,9 @@ do
   echo -e "${FS}Loading unit $unit${FE}"
   bin/fleetctl --tunnel $TUNNEL_IP --ssh-username $SSH_USER start $unit
 done
+
+echo "Waiting for MONs to stabilize"
+sleep 30
 
 function GEN_MON {
   echo -e "${FS}skipping mon (done already)${FE}"
