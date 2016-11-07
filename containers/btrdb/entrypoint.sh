@@ -49,7 +49,7 @@ get_admin_key
 : ${BTRDB_MONGO_COLLECTION:=btrdb}
 : ${BTRDB_EARLY_TRIP:=16384}
 : ${BTRDB_INTERVAL:=5000}
-: ${BTRDB_STORAGE_PROVIDER:=file}
+: ${BTRDB_STORAGE_PROVIDER:=ceph}
 : ${BTRDB_FILEPATH:=/srv/btrdb}
 : ${BTRDB_CEPHCONF:=/etc/ceph/ceph.conf}
 : ${BTRDB_CEPHPOOL:=btrdb}

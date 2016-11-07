@@ -10,11 +10,9 @@ RestartSec=1m
 TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
-  -v /srv/btrdb:/etc/btrdb  \
   -p 4410:4410 \
   -p 9000:9000 \
   -e BTRDB_MONGO_SERVER=XX_INTERNAL_IP:27017 \
-  -e BTRDB_STORAGE_PROVIDER=ceph \
   immesys/btrdb-ceph-3.4
 ExecStop=/usr/bin/docker stop -t 60 %p ; /usr/bin/docker rm -f %p
 

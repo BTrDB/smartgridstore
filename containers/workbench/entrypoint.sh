@@ -34,6 +34,8 @@
 : ${CLUSTER_PATH:=ceph-config/${CLUSTER}}
 export KV_IP=$(netstat -nr | grep '^0\.0\.0\.0' | awk '{print $2}')
 
+echo "$KV_IP mongo.local" >> /etc/hosts
+
 #inherited from ceph container
 source /config.kv.sh
 
@@ -120,6 +122,12 @@ if [[ $1 = "ceph" ]]
 then
   shift 1
   ceph --cluster $CLUSTER $@
+  exit 0
+fi
+if [[ $1 = "adm" ]]
+then
+  ./upmu-adm
+  ./manager2lite.py
   exit 0
 fi
 bash -i
