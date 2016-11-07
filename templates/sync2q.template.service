@@ -10,8 +10,8 @@ RestartSec=1m
 TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
-  -e BTRDB_ADDR=XX_NODENAME:4410 \
-  -e MONGO_ADDR=XX_NODENAME:27017 \
+  -e BTRDB_ADDR=XX_BTRDB:4410 \
+  -e MONGO_ADDR=XX_MONGO:27017 \
   -e YTAG=300 \
   -m 6G \
   -v /srv/sync:/etc/sync \

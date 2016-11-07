@@ -34,6 +34,16 @@
 : ${CLUSTER_PATH:=ceph-config/${CLUSTER}}
 export KV_IP=$(netstat -nr | grep '^0\.0\.0\.0' | awk '{print $2}')
 
+function log {
+  if [ -z "$*" ]; then
+    return 1
+  fi
+
+  TIMESTAMP=$(date '+%F %T')
+  echo "${TIMESTAMP}  $0: $*"
+  return 0
+}
+
 #inherited from ceph container
 source /config.kv.sh
 

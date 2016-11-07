@@ -58,6 +58,8 @@ then
   exit 0
 fi
 
+if [ ! -f /etc/mrplotter/plotter.ini ]; then
+
 cat >/etc/mrplotter/plotter.ini <<EOFF
 http_port=80
 https_port=443
@@ -86,5 +88,7 @@ db_data_timeout_seconds=10
 db_bracket_timeout_seconds=10
 EOFF
 
+
+fi
 
 mr-plotter /etc/mrplotter/plotter.ini |& pp

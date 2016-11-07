@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -x
 
 FS="\033[34;1m"
 FE="\033[0m"
@@ -14,6 +14,19 @@ fi
 osd_idx=0
 
 CFG="qs-config.sh"
+
+if [ -n "$(ls -A units/*)" ]
+then
+  if [ -z "$EXPERT_MODE" ]
+  then
+    echo "There are files in units/ and EXPERT_MODE is unset"
+    echo "Please consult the guide"
+    exit 1
+  else
+    echo "There are files in units/ but EXPERT_MODE is set"
+    echo "continuing"
+  fi
+fi
 
 rm -f units/*.service
 rm -f units/*.bak
@@ -42,6 +55,9 @@ function GEN_MONGODB {
 }
 function GEN_RECEIVER {
   echo -e "${FS}skipping GEN_RECEIVER (will run on next pass)${FE}"
+}
+function GEN_SYNC2Q {
+  echo -e "${FS}skipping GEN_SYNC2Q (will run on next pass)${FE}"
 }
 function FORMAT_BTRDB {
   echo -e "${FS}skipping FORMAT_BTRDB (will run on next pass)${FE}"
@@ -173,6 +189,18 @@ function GEN_RECEIVER {
   sed -i.bak "s/XX_MONGO/$mongo/g" $unit
   rm -f units/*.bak
 }
+function GEN_SYNC2Q {
+  echo -e "${FS}generating sync2q for $1 ${FE}"
+  nodename="$1"
+  mongo="$2"
+  btrdb="$3"
+  unit=units/sync2q-$nodename.service
+  cp templates/sync2q.template.service $unit
+  sed -i.bak "s/XX_NODENAME/$nodename/g" $unit
+  sed -i.bak "s/XX_MONGO/$mongo/g" $unit
+  sed -i.bak "s/XX_BTRDB/$btrdb/g" $unit
+  rm -f units/*.bak
+}
 source $CFG
 rm -f units/*.bak
 ii=0
@@ -204,7 +232,9 @@ function GEN_MONGODB {
 function GEN_RECEIVER {
   echo -e "${FS}skipping GEN_RECEIVER (done already)${FE}"
 }
-
+function GEN_SYNC2Q {
+  echo -e "${FS}skipping GEN_SYNC2Q (done already)${FE}"
+}
 function CREATE_CEPH_POOL {
   poolname="$1"
   args="$@"
@@ -262,4 +292,8 @@ do
   echo -e "${FS}starting $unit ${FE}"
   bin/fleetctl --tunnel $TUNNEL_IP --ssh-username $SSH_USER start $unit
 done
-# TODO create a btrdb pool
+for unit in units/sync2q-*
+do
+  echo -e "${FS}starting $unit ${FE}"
+  bin/fleetctl --tunnel $TUNNEL_IP --ssh-username $SSH_USER start $unit
+done

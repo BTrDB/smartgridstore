@@ -1,2 +1,2 @@
 #!/bin/bash
-/srv/go/src/github.com/SoftwareDefinedBuildings/mr-plotter/tools/accounts.py $MONGO_IP
+/srv/go/src/github.com/SoftwareDefinedBuildings/mr-plotter/tools/accounts.py mongo.local

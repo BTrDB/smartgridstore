@@ -52,8 +52,8 @@ do
     echo "  FORMAT_BTRDB $nodename $eip $iip" >> $CFG
     echo "  # install the metadata shim (args: nodename, mongo)" >> $CFG
     echo "  GEN_METADATA $nodename $iip" >> $CFG
-    echo "  # install the upmu data receiver daemon (args: nodename, mongo)" >> $CFG
-    echo "  GEN_RECEIVER $nodename $iip" >> $CFG
+    echo "  # install the upmu data receiver daemon (args: nodename, mongo, btrdb)" >> $CFG
+    echo "  GEN_RECEIVER $nodename $iip $iip" >> $CFG
     echo "  # install the upmu data loader (args: nodename, mongo, btrdb)" >> $CFG
     echo "  #GEN_SYNC2Q $nodename $iip $iip" >> $CFG
     echo "  # generate an SSL certificate for the plotter (args: domain)" >> $CFG
@@ -72,30 +72,22 @@ do
       echo "  # drive $idx name=${fields[1]} size=${fields[2]} model=${fields[3]} serial=${fields[4]} wwn=${fields[5]}" >> $CFG
       echo "  FORMAT_DISK $nodename $eip /dev/${fields[1]}" >> $CFG
       echo "  GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
-      if [ $( find -L /dev/disk/by-id -samefile /dev/${fields[1]} | wc -l) -gt 0 ]
+      if [ $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} | wc -l) -gt 0 ]
       then
         echo "  #persistent options (see guide): " >> $CFG
-        for opt in $( find -L /dev/disk/by-id -samefile /dev/${fields[1]}
+        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} )
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
-        for opt in $( find -L /dev/disk/by-path -samefile /dev/${fields[1]}
+        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} )
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
+      fi
       idx=$(($idx+1))
       echo "" >> $CFG
       echo -e "\033[34;1m - found $nodename::${fields[1]} \033[0m"
     fi
   done
   echo "" >> $CFG
-done
-
-for opt in $( find -L /dev/disk/by-id -samefile /dev/sda )
-do
-  echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
-done
-for opt in $( find -L /dev/disk/by-path -samefile /dev/sda )
-do
-  echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
 done

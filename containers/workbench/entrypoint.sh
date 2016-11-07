@@ -34,6 +34,16 @@
 : ${CLUSTER_PATH:=ceph-config/${CLUSTER}}
 export KV_IP=$(netstat -nr | grep '^0\.0\.0\.0' | awk '{print $2}')
 
+function log {
+  if [ -z "$*" ]; then
+    return 1
+  fi
+
+  TIMESTAMP=$(date '+%F %T')
+  echo "${TIMESTAMP}  $0: $*"
+  return 0
+}
+
 echo "$KV_IP mongo.local" >> /etc/hosts
 
 #inherited from ceph container
@@ -68,7 +78,7 @@ ln -s /etc/sync/upmuconfig.ini
 : ${BTRDB_MONGO_COLLECTION:=btrdb}
 : ${BTRDB_EARLY_TRIP:=16384}
 : ${BTRDB_INTERVAL:=5000}
-: ${BTRDB_STORAGE_PROVIDER:=file}
+: ${BTRDB_STORAGE_PROVIDER:=ceph}
 : ${BTRDB_FILEPATH:=/srv/btrdb}
 : ${BTRDB_CEPHCONF:=/etc/ceph/ceph.conf}
 : ${BTRDB_CEPHPOOL:=btrdb}
@@ -76,7 +86,7 @@ ln -s /etc/sync/upmuconfig.ini
 if [ -z "$BTRDB_MONGO_SERVER" ]
 then
   echo "Using default BTRDB_MONGO_SERVER"
-  BTRDB_MONGO_SERVER=KV_IP:27017
+  BTRDB_MONGO_SERVER=$KV_IP:27017
 fi
 
 cat >btrdb.conf <<EOF
