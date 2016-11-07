@@ -5,6 +5,7 @@ After=docker.service
 
 [Service]
 Restart=always
+TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run --name %p -v /usr/share/ca-certificates/:/etc/ssl/certs \
  -p 4001:4001 -p 2380:2380 -p 2379:2379 \
  -v /srv/etcd:/srv/etcd \

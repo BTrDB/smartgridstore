@@ -58,7 +58,7 @@ do
     echo "  #GEN_SYNC2Q $nodename $iip $iip" >> $CFG
     echo "  # generate an SSL certificate for the plotter (args: domain)" >> $CFG
     echo "  GEN_SSL_CERT $DOMAIN" >> $CFG
-    echo "  # install the plotter (args: nodename, metadata, btrdb)" >> $CFG
+    echo "  # install the plotter (args: nodename, domain, metadata, btrdb, mongo)" >> $CFG
     echo "  GEN_PLOTTER $nodename $DOMAIN $iip $iip $iip" >> $CFG
     echo "" >> $CFG
     DONE_APPS=1
@@ -72,10 +72,30 @@ do
       echo "  # drive $idx name=${fields[1]} size=${fields[2]} model=${fields[3]} serial=${fields[4]} wwn=${fields[5]}" >> $CFG
       echo "  FORMAT_DISK $nodename $eip /dev/${fields[1]}" >> $CFG
       echo "  GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
+      if [ $( find -L /dev/disk/by-id -samefile /dev/${fields[1]} | wc -l) -gt 0 ]
+      then
+        echo "  #persistent options (see guide): " >> $CFG
+        for opt in $( find -L /dev/disk/by-id -samefile /dev/${fields[1]}
+        do
+          echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+        done
+        for opt in $( find -L /dev/disk/by-path -samefile /dev/${fields[1]}
+        do
+          echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+        done
       idx=$(($idx+1))
       echo "" >> $CFG
       echo -e "\033[34;1m - found $nodename::${fields[1]} \033[0m"
     fi
   done
   echo "" >> $CFG
+done
+
+for opt in $( find -L /dev/disk/by-id -samefile /dev/sda )
+do
+  echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+done
+for opt in $( find -L /dev/disk/by-path -samefile /dev/sda )
+do
+  echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
 done

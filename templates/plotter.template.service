@@ -8,7 +8,7 @@ After=plotter-metadata-XX_NODENAME.service
 [Service]
 Restart=always
 RestartSec=1m
-ExecStartPre=/usr/bin/docker pull immesys/mrplotter
+TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
   -m 6G \

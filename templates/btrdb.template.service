@@ -7,7 +7,7 @@ After=mongo-XX_NODENAME.service
 [Service]
 Restart=always
 RestartSec=1m
-ExecStartPre=/usr/bin/docker pull immesys/btrdb-ceph-3.4
+TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
   -v /srv/btrdb:/etc/btrdb  \

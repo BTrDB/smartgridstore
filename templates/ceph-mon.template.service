@@ -3,7 +3,7 @@ Description=Ceph monitor
 
 [Service]
 Restart=always
-TimeoutStartSec=1m
+TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
   --net=host \

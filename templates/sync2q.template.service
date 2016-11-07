@@ -7,7 +7,7 @@ After=btrdb-XX_NODENAME.service
 [Service]
 Restart=always
 RestartSec=1m
-ExecStartPre=/usr/bin/docker pull immesys/btrdb-qs-sync
+TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
   -e BTRDB_ADDR=XX_NODENAME:4410 \

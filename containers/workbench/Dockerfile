@@ -7,6 +7,7 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local
 ENV GOTRACEBACK=all
 ENV GOGC=40
 ADD entrypoint.sh /
+ADD btrdbd /bin/
 RUN apt-get install -y python-pip librados-dev libssl-dev libffi-dev python-dev
 RUN pip install pymongo requests bcrypt configobj pytz
 RUN apt-get install -y ipython letsencrypt
