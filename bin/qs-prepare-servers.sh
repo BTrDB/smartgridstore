@@ -84,3 +84,5 @@ do
     sudo systemctl enable fleet.service ; sudo systemctl start fleet.service"
 done
 echo -e "\033[34;1mserver preparation complete\033[0m"
+rm -f units/fleet*
+rm -f units/etcd*

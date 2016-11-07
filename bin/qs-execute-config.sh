@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 FS="\033[34;1m"
 FE="\033[0m"
 if [ -z "$CLUSTER_INFO" ]; then
