@@ -72,14 +72,14 @@ do
       echo "  # drive $idx name=${fields[1]} size=${fields[2]} model=${fields[3]} serial=${fields[4]} wwn=${fields[5]}" >> $CFG
       echo "  FORMAT_DISK $nodename $eip /dev/${fields[1]}" >> $CFG
       echo "  GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
-      if [ $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} | wc -l) -gt 0 ]
+      if [ $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} 2>/dev/null | wc -l) -gt 0 ]
       then
         echo "  #persistent options (see guide): " >> $CFG
-        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} )
+        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} 2>/dev/null )
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
-        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} )
+        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} 2>/devnull )
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
