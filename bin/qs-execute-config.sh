@@ -11,6 +11,8 @@ fi
 
 osd_idx=0
 
+shopt -s nullglob
+
 CFG="qs-config.sh"
 
 if [ -n "$(ls -A units/*)" ]
