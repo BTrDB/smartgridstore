@@ -23,6 +23,7 @@ WORKDIR /wb
 ADD accounts /wb
 ADD upmu-adm /wb
 ADD mongo.sh /wb
+ADD remove /wb
 ADD set-selfsigned-certs.sh /wb
 ADD manager2lite.py /wb
 

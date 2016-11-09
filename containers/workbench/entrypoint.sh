@@ -45,6 +45,7 @@ function log {
 }
 
 echo "$KV_IP mongo.local" >> /etc/hosts
+echo "$KV_IP btrdb.local" >> /etc/hosts
 
 #inherited from ceph container
 source /config.kv.sh
