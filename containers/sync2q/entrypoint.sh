@@ -7,4 +7,4 @@ then
   touch /etc/sync/upmuconfig.ini
 fi
 ln -s /etc/sync/upmuconfig.ini upmuconfig.ini
-sync2_quasar |& pp
+sync2_quasar 

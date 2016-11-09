@@ -11,8 +11,6 @@ RUN go get github.com/maruel/panicparse/cmd/pp
 
 ADD entrypoint.sh /
 RUN chmod a+x /entrypoint.sh
-RUN ln -s /etc/sync/syncconfig.ini
-RUN ln -s /etc/sync/upmuconfig.ini
 
 VOLUME /etc/sync
 ENTRYPOINT ["/entrypoint.sh"]
