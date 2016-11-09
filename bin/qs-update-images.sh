@@ -19,6 +19,7 @@ do
   ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-receiver
   ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-sync
   ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-wb
+  ssh $SSH_USER@$eip sudo docker pull btrdb/distiller
 
   #ssh $SSH_USER@$eip sudo docker pull btrdb/notebook:1.0
 done
