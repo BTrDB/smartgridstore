@@ -21,11 +21,14 @@ fi
 if [[ $1 == "metadata" ]]
 then
   mkdir -p /etc/mrplotter
+  if [ ! -e /etc/mrplotter/tagconfig.json ]
+  then 
   cat >/etc/mrplotter/tagconfig.json <<EOFF
   {
       "public": ["/"]
   }
 EOFF
+  fi
 
   ls /etc/mrplotter
   cat /etc/mrplotter/tagconfig.json

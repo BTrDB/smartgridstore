@@ -71,7 +71,7 @@ def mknew(alias, serial, ext=False):
         unit = t[1]
         for subtag in t[0]:
             rv[subtag] = {"Path":"/upmu/"+alias+"/"+subtag,
-                          "uuid":str(uuid.uuid4()).upper(),
+                          "uuid":str(uuid.uuid4()).lower(),
                           "Properties":{"UnitofMeasure":unit}}
     return rv
 
@@ -240,7 +240,7 @@ def create_funcs():
               unit = t[1]
               for subtag in t[0]:
                   config[k][subtag] = {"Path":"/upmu/"+alias+"/"+subtag,
-                                "uuid":str(uuid.uuid4()).upper(),
+                                "uuid":str(uuid.uuid4()).lower(),
                                 "Properties":{"UnitofMeasure":unit}}
       else:
           if "FUND_W" not in config[k]:

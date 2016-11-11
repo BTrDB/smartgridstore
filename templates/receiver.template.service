@@ -10,6 +10,7 @@ TimeoutStartSec=30m
 ExecStart=/usr/bin/docker run \
   --name %p \
   -p 1883:1883 \
+  -v /srv/sync:/etc/sync \
   -e MONGO=XX_MONGO \
   immesys/btrdb-qs-receiver
 ExecStop=/usr/bin/docker stop -t 5 %p ; /usr/bin/docker rm -f %p
