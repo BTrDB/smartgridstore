@@ -79,7 +79,7 @@ do
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
-        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} 2>/devnull )
+        for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} 2>/dev/null )
         do
           echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
         done
