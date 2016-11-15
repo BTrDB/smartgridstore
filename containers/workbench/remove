@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+import sys
+import pymongo
+
+if len(sys.argv) != 2:
+    print "usage: remove 'path regex'"
+    sys.exit(1)
+
+# this script will remove the metadata that matches a specific path,
+# preventing the data from showing up in the plotter.
+mongoconn = pymongo.MongoClient('mongo.local', 27017)
+def uuids_from_path_re(path):
+    global mongoconn
+    rv = list(mongoconn.qdf.metadata.find({"Path":{"$regex":path}}))
+    return [(x["uuid"], x["Path"]) for x in rv]
+
+uuids_to_kill = uuids_from_path_re(sys.argv[1])
+pl = 8
+for e in uuids_to_kill:
+    pl = max(pl, len(e[1]))
+print "we will remove the following streams:"
+print " UUID                                 | Path"
+print "--------------------------------------+-"+("-"*pl)
+for e in uuids_to_kill:
+    print " %36s | %s" % e
+print "--------------------------------------+-"+("-"*pl)
+prompt = raw_input("type 'proceed' to continue> ")
+if prompt != "proceed":
+    print "ABORTING"
+else:
+    for e in uuids_to_kill:
+        mongoconn.qdf.metadata.remove({"uuid":e[0]})
+    print "done"
