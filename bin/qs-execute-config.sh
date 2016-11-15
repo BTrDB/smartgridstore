@@ -15,7 +15,7 @@ shopt -s nullglob
 
 CFG="qs-config.sh"
 
-if [ -n "$(ls -A units/*)" ]
+if [ -n "$(ls -A units)" ]
 then
   if [ -z "$EXPERT_MODE" ]
   then
