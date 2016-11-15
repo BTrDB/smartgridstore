@@ -141,4 +141,10 @@ then
   ./manager2lite.py
   exit 0
 fi
+if [[ $1 = "etcdctl" ]]
+then
+  shift 1
+  etcdctl $@
+  exit 0
+fi
 bash -i
