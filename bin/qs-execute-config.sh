@@ -38,6 +38,43 @@ function GEN_MON {
   rm -f units/*.bak
 }
 
+function ERASE_CEPH_STATEFILES {
+  for srv in $CLUSTER_INFO
+  do
+    arr=(${srv//,/ })
+    nodename=${arr[0]}
+    eip=${arr[1]}
+    iip=${arr[2]}
+    ssh $SSH_USER@$eip sudo rm -rf /srv/ceph
+  done
+}
+
+function ERASE_CEPH_ETCD {
+  ssh -t $SSH_USER@$TUNNEL_IP "sudo docker run -it -e KV_PORT=2379 \
+   -e CLUSTER_INFO=\"$CLUSTER_INFO\" \
+   immesys/btrdb-qs-wb etcdctl rm --recursive ceph-config"
+}
+
+function UPDATE_CONTAINERS {
+  echo -e "\033[34;1mupdating docker images\033[0m"
+  for srv in $CLUSTER_INFO
+  do
+    arr=(${srv//,/ })
+    nodename=${arr[0]}
+    eip=${arr[1]}
+    iip=${arr[2]}
+    echo -e "\033[34;1m - updating $nodename\033[0m"
+
+    ssh $SSH_USER@$eip sudo docker pull immesys/mrplotter
+    ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-ceph-3.4
+    ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-receiver
+    ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-sync
+    ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-wb
+    ssh $SSH_USER@$eip sudo docker pull btrdb/distiller
+  done
+  echo -e "\033[34;1mdone\033[0m"
+}
+
 function GEN_OSD {
   echo -e "${FS}skipping GEN_OSD (will run on next pass)${FE}"
 }
@@ -87,6 +124,18 @@ done
 
 echo "Waiting for MONs to stabilize"
 sleep 30
+
+function ERASE_CEPH_STATEFILES {
+  echo -e "${FS}skipping erase ceph statefiles (done already)${FE}"
+}
+
+function ERASE_CEPH_ETCD {
+  echo -e "${FS}skipping erase ceph etcd (done already)${FE}"
+}
+
+function UPDATE_CONTAINERS {
+  echo -e "${FS}skipping update containers (done already)${FE}"
+}
 
 function GEN_MON {
   echo -e "${FS}skipping mon (done already)${FE}"

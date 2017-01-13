@@ -20,7 +20,7 @@ do
   ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-sync
   ssh $SSH_USER@$eip sudo docker pull immesys/btrdb-qs-wb
   ssh $SSH_USER@$eip sudo docker pull btrdb/distiller
-
+  ssh $SSH_USER@$eip sudo docker pull ceph/daemon:tag-build-master-jewel-ubuntu-16.04
   #ssh $SSH_USER@$eip sudo docker pull btrdb/notebook:1.0
 done
 echo -e "\033[34;1mdone\033[0m"

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#variables you set to modify this
+# $HINT_GEN_OSD_SKIP_DEV - automatically skip /dev devices (assuming ID and Path are available)
+# $HINT_GEN_OSD_SKIP_ID - leave ID commented out
+
 set -e
 
 if [ -z "$CLUSTER_INFO" ]; then
@@ -29,6 +33,15 @@ echo "# after you finish editing the file, remove this line: " >> $CFG
 echo "REMOVE_AFTER_CHECKING_FILE" >> $CFG
 echo "" >> $CFG
 echo -e "\033[34;1mscanning for disks\033[0m"
+
+echo "# update containers on the cluster" >> $CFG
+echo "UPDATE_CONTAINERS" >> $CFG
+
+echo "# erase any previous ceph state files in /srv" >> $CFG
+echo "#ERASE_CEPH_STATEFILES" >> $CFG
+
+echo "# erase any previous ceph state in etcd" >> $CFG
+echo "#ERASE_CEPH_ETCD" >> $CFG
 
 echo "# create a ceph pool (destroying it if it exists) (args: poolname, pg, pgp, ruleset)" >> $CFG
 echo "CREATE_CEPH_POOL btrdb 512 512 replicated" >> $CFG
@@ -68,20 +81,44 @@ do
   for dd in "${drives[@]}"
   do
     fields=($dd)
+    emitted=0
     if [ ${fields[0]} == "disk" ]; then
       echo "  # drive $idx name=${fields[1]} size=${fields[2]} model=${fields[3]} serial=${fields[4]} wwn=${fields[5]}" >> $CFG
       echo "  FORMAT_DISK $nodename $eip /dev/${fields[1]}" >> $CFG
-      echo "  GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
+      if [ -z "$HINT_GEN_OSD_SKIP_DEV" ]
+      then
+        emitted=1
+        echo "  GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
+      else
+        echo "  #GEN_OSD $nodename $iip /dev/${fields[1]} root=default host=$nodename" >> $CFG
+      fi
       if [ $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} 2>/dev/null | wc -l) -gt 0 ]
       then
         echo "  #persistent options (see guide): " >> $CFG
         for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-id -samefile /dev/${fields[1]} 2>/dev/null )
         do
-          echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+          if [[ "$emitted" -eq "0" ]]
+          then
+            if [ -z "$HINT_GEN_OSD_SKIP_ID" ]
+            then
+              echo "  GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+              emitted=1
+            else
+              echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+            fi
+          else
+            echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+          fi
         done
         for opt in $( ssh -i $IDENTITY $SSH_USER@$eip sudo find -L /dev/disk/by-path -samefile /dev/${fields[1]} 2>/dev/null )
         do
-          echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+          if [ "$emitted" -eq "0" ]
+          then
+            echo "  GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+            emitted=1
+          else
+            echo "  #GEN_OSD $nodename $iip $opt root=default host=$nodename" >> $CFG
+          fi
         done
       fi
       idx=$(($idx+1))
