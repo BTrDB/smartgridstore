@@ -1,2 +1,0 @@
-#!/bin/bash
-/srv/go/src/github.com/SoftwareDefinedBuildings/mr-plotter/tools/accounts.py mongo.local

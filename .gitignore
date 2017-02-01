@@ -2,3 +2,5 @@ tools/receiver/receiver
 tools/simulator/simulator
 containers/simulator/simulator
 containers/receiver/receiver
+tools/ingester/ingester
+containers/ingester/ingester

@@ -21,6 +21,10 @@ import (
 	uuid "github.com/pborman/uuid"
 )
 
+const VersionMajor = 4
+const VersionMinor = 1
+const VersionPatch = 0
+
 var btrdbconn *btrdb.BTrDB
 var ytagbase int = 0
 var configfile []byte = nil
@@ -43,6 +47,12 @@ func getEtcdKeySafe(ctx context.Context, etcdConn *etcd.Client, key string) []by
 }
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "-version" {
+		fmt.Printf("%d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+		os.Exit(0)
+	}
+	fmt.Printf("Booting ingester version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+
 	var etcdPrefix string = os.Getenv("INGESTER_ETCD_CONFIG")
 
 	var etcdEndpoint string = os.Getenv("ETCD_ENDPOINT")
@@ -122,7 +132,7 @@ func main() {
 		}
 	}()
 
-	wch := etcdConn.Watch(ctx, etcdPrefix + "manifest/", etcd.WithPrefix())
+	wch := etcdConn.Watch(ctx, etcdPrefix+"manifest/", etcd.WithPrefix())
 
 	/* Start over if the configuration file changes */
 	go func() {
@@ -143,7 +153,7 @@ func main() {
 		alive = true
 		terminate = true
 
-		getEtcdKeySafe(ctx, etcdConn, etcdPrefix + "ingester/ytagbase")
+		getEtcdKeySafe(ctx, etcdConn, etcdPrefix+"ingester/ytagbase")
 
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -151,7 +161,7 @@ func main() {
 		var uuids []string
 		var ytagnum int64
 
-		ytagbytes := getEtcdKeySafe(ctx, etcdConn, etcdPrefix + "ingester/generation")
+		ytagbytes := getEtcdKeySafe(ctx, etcdConn, etcdPrefix+"ingester/generation")
 		if ytagbytes != nil {
 			ytagnum, err = strconv.ParseInt(string(ytagbytes), 0, 32)
 			if err != nil {
@@ -160,11 +170,11 @@ func main() {
 				ytagbase = int(ytagnum)
 			}
 		} else {
-			fmt.Println("Configuration file does not specify ytagbase. Defaulting to 2.")
-			ytagbase = 2
+			fmt.Println("Configuration file does not specify ytagbase. Defaulting to 10.")
+			ytagbase = 10
 		}
 
-		resp, err := etcdConn.Get(ctx, etcdPrefix + "manifest/psl.pqube3.", etcd.WithPrefix())
+		resp, err := etcdConn.Get(ctx, etcdPrefix+"manifest/psl.pqube3.", etcd.WithPrefix())
 		if err != nil {
 			panic(err)
 		}
