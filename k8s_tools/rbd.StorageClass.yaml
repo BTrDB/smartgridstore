@@ -1,0 +1,17 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: rbd
+provisioner: kubernetes.io/rbd
+parameters:
+  # you need to change this to match your monitor IPs
+  monitors: 10.20.0.10:6789,10.20.0.13:6789,10.20.0.17:6789
+  adminId: admin
+  # you need to create this from your keyring, like
+  # get the key with cat /etc/ceph/ceph.client.admin.keyring
+  # kubectl create secret generic ceph-rbd-secret -n sgs --type="kubernetes.io/rbd" --from-literal=key='<key>'
+  adminSecretName: ceph-rbd-secret
+  adminSecretNamespace: sgs
+  pool: rbd
+  userId: admin
+  userSecretName: ceph-rbd-secret
