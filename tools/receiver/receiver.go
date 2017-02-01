@@ -101,7 +101,7 @@ func processMessage(sendid []byte, ip string, sernum string, filepath string, da
 	rh := <-rhPool
 	defer func() { rhPool <- rh }()
 
-	objname := fmt.Sprintf("data.%s.%s", sernum, filepath)
+	objname := fmt.Sprintf("data.psl.pqube3.%s.%s", sernum, filepath)
 
 	err := rh.SetOmap("meta.master", map[string][]byte{objname: []byte(objname)})
 	if err != nil {
