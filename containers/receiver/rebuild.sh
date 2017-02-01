@@ -1,4 +1,5 @@
 #!/bin/bash
 set -e
-docker build --no-cache -t immesys/btrdb-qs-receiver .
-docker push immesys/btrdb-qs-receiver
+go build github.com/immesys/smartgridstore/tools/receiver
+docker build -t btrdb/sgs/receiver .
+docker push btrdb/sgs/receiver

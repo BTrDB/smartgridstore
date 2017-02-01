@@ -1,5 +1,5 @@
 
-FROM ubuntu:xenial
+FROM btrdb/ceph
 
 RUN apt-get update && apt-get install -y net-tools git build-essential vim wget
 RUN wget -O /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz && tar -xf /tmp/go.tar.gz -C /usr/local/ && rm /tmp/go.tar.gz && mkdir /srv/go
