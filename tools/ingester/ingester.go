@@ -1,21 +1,20 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/ceph/go-ceph/rados"
-	"github.com/immesys/smartgridstore/tools/ingester/configparser"
+	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
 	"gopkg.in/btrdb.v4"
 
@@ -28,57 +27,38 @@ var configfile []byte = nil
 
 const NUM_RHANDLES = 16
 
+var INGESTER_SPACE uuid.UUID = uuid.Parse("c9bbebff-ff40-4dbe-987e-f9e96afb7a57")
+
 var rhPool chan *rados.IOContext
 
-func checkConfigFile() bool {
-	var file *os.File
-	var err error
-	file, err = os.Open("upmuconfig.ini")
+func getEtcdKeySafe(ctx context.Context, etcdConn *etcd.Client, key string) []byte {
+	resp, err := etcdConn.Get(context.Background(), key)
 	if err != nil {
-		fmt.Printf("Could not open upmuconfig.ini: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Could not check for keys in etcd: %v", err)
 	}
-
-	defer file.Close()
-
-	var fd uintptr = file.Fd()
-
-	// Will block until acquired
-	err = syscall.Flock(int(fd), syscall.LOCK_EX)
-	if err != nil {
-		fmt.Printf("WARNING: could not lock upmuconfig.ini: %v\n", err)
-		return false
+	if len(resp.Kvs) == 0 {
+		return nil
 	}
-
-	var filecontents []byte
-	filecontents, err = ioutil.ReadAll(file)
-	if err != nil {
-		fmt.Printf("Could not read upmuconfig.ini: %v\n", err)
-		os.Exit(1)
-	}
-
-	if len(filecontents) == 0 {
-		fmt.Println("Configuration file (upmuconfig.ini) is empty!")
-		os.Exit(1)
-	}
-
-	if configfile == nil || !bytes.Equal(filecontents, configfile) {
-		configfile = filecontents
-		return true
-	}
-
-	return false
+	return resp.Kvs[0].Value
 }
 
 func main() {
-	var changed bool
-	var err error
+	var etcdPrefix string = os.Getenv("INGESTER_ETCD_CONFIG")
 
-	changed = checkConfigFile()
-	if !changed {
-		fmt.Println("Could not read upmuconfig.ini")
-		return
+	var etcdEndpoint string = os.Getenv("ETCD_ENDPOINT")
+	if len(etcdEndpoint) == 0 {
+		etcdEndpoint = "localhost:2379"
+		log.Printf("ETCD_ENDPOINT is not set; using %s", etcdEndpoint)
 	}
+
+	var etcdConfig etcd.Config = etcd.Config{Endpoints: []string{etcdEndpoint}}
+
+	log.Println("Connecting to etcd...")
+	etcdConn, err := etcd.New(etcdConfig)
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	defer etcdConn.Close()
 
 	conn, err := rados.NewConn()
 	if err != nil {
@@ -142,20 +122,19 @@ func main() {
 		}
 	}()
 
+	wch := etcdConn.Watch(ctx, etcdPrefix + "manifest/", etcd.WithPrefix())
+
 	/* Start over if the configuration file changes */
 	go func() {
-		var changed bool = false
-		for {
-			time.Sleep(15 * time.Second)
-			if checkConfigFile() {
-				changed = true
-			} else if changed {
-				changed = false
-				// start from scratch
-				fmt.Println("Configuration file changed. Restarting...")
-				terminate = false
-				alive = false
+		for resp := range wch {
+			err := resp.Err()
+			if err != nil {
+				panic(err)
 			}
+			fmt.Println("Configuration file changed. Restarting in 15 seconds...")
+			time.Sleep(15 * time.Second)
+			terminate = false
+			alive = false
 		}
 	}()
 
@@ -164,90 +143,45 @@ func main() {
 		alive = true
 		terminate = true
 
-		config, isErr := configparser.ParseConfig(string(configfile))
-		if isErr {
-			fmt.Println("There were errors while parsing upmuconfig.ini. See above.")
-			return
-		}
-
-		var syncconfigfile []byte
-		syncconfigfile, err = ioutil.ReadFile("syncconfig.ini")
-		if err != nil {
-			fmt.Printf("Could not read syncconfig.ini: %v\n", err)
-			return
-		}
-
-		syncconfig, isErr := configparser.ParseConfig(string(syncconfigfile))
-		if isErr {
-			fmt.Println("There were errors while parsing syncconfig.ini. See above.")
-			return
-		}
+		getEtcdKeySafe(ctx, etcdConn, etcdPrefix + "ingester/ytagbase")
 
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
-		var complete chan bool = make(chan bool)
-
 		var num_uPMUs int = 0
-		var temp interface{}
-		var serial string
-		var alias string
-		var ok bool
 		var uuids []string
-		var i int
-		var streamMap map[string]interface{}
-		var ip string
-		var upmuMap map[string]interface{}
-		var ytagstr interface{}
 		var ytagnum int64
 
-		ytagstr, ok = syncconfig["ytagbase"]
-		if ok {
-			ytagnum, err = strconv.ParseInt(ytagstr.(string), 0, 32)
+		ytagbytes := getEtcdKeySafe(ctx, etcdConn, etcdPrefix + "ingester/generation")
+		if ytagbytes != nil {
+			ytagnum, err = strconv.ParseInt(string(ytagbytes), 0, 32)
 			if err != nil {
-				fmt.Println("ytagbase must be an integer")
+				fmt.Println("generation must be an integer")
 			} else {
 				ytagbase = int(ytagnum)
 			}
 		} else {
-			fmt.Println("Configuration file does not specify ytagbase. Defaulting to 0.")
+			fmt.Println("Configuration file does not specify ytagbase. Defaulting to 2.")
+			ytagbase = 2
 		}
 
-	uPMULoop:
-		for ip, temp = range config {
+		resp, err := etcdConn.Get(ctx, etcdPrefix + "manifest/psl.pqube3.", etcd.WithPrefix())
+		if err != nil {
+			panic(err)
+		}
+		wg := &sync.WaitGroup{}
+		for _, kv := range resp.Kvs {
+			key := string(kv.Key)
+			identifier := key[len(etcdPrefix):]
+			serial := strings.SplitN(identifier, ".", 3)[2]
 			uuids = make([]string, 0, len(upmuparser.STREAMS))
-			upmuMap = temp.(map[string]interface{})
-			temp, ok = upmuMap["%serial_number"]
-			if !ok {
-				fmt.Printf("Serial number of uPMU with IP Address %v is not specified. Skipping uPMU...\n", ip)
-				continue
+			for _, canonical := range upmuparser.STREAMS {
+				uuid := uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s", identifier, canonical)))
+				uuids = append(uuids, uuid.String())
 			}
-			serial = temp.(string)
-			temp, ok = upmuMap["%alias"]
-			if ok {
-				alias = temp.(string)
-			} else {
-				alias = serial
-			}
-			for i = 0; i < len(upmuparser.STREAMS); i++ {
-				temp, ok = upmuMap[upmuparser.STREAMS[i]]
-				if !ok {
-					break
-				}
-				streamMap = temp.(map[string]interface{})
-				temp, ok = streamMap["uuid"]
-				if !ok {
-					fmt.Printf("UUID is missing for stream %v of uPMU %v. Skipping uPMU...\n", upmuparser.STREAMS[i], alias)
-					continue uPMULoop
-				}
-				uuids = append(uuids, temp.(string))
-			}
-			fmt.Printf("Starting process loop of uPMU %v\n", alias)
-			go startProcessLoop(ctx, serial, alias, uuids, &alive, complete)
+			wg.Add(1)
+			fmt.Printf("Starting process loop of uPMU %v\n", identifier)
+			go startProcessLoop(ctx, serial, identifier, uuids, &alive, wg)
 			num_uPMUs++
-		}
-
-		for i = 0; i < num_uPMUs; i++ {
-			<-complete // block the main thread until all the goroutines say they're done
 		}
 
 		if num_uPMUs == 0 {
@@ -255,11 +189,13 @@ func main() {
 			for alive {
 				time.Sleep(time.Second)
 			}
+		} else {
+			wg.Wait()
 		}
 	}
 }
 
-func startProcessLoop(ctx context.Context, serial_number string, alias string, uuid_strings []string, alivePtr *bool, finishSig chan bool) {
+func startProcessLoop(ctx context.Context, serial_number string, alias string, uuid_strings []string, alivePtr *bool, wg *sync.WaitGroup) {
 	var uuids = make([]uuid.UUID, len(uuid_strings))
 
 	var i int
@@ -274,7 +210,7 @@ func startProcessLoop(ctx context.Context, serial_number string, alias string, u
 
 	process_loop(ctx, alivePtr, serial_number, alias, uuids, btrdbconn)
 
-	finishSig <- true
+	wg.Done()
 }
 
 func insert_stream(ctx context.Context, uu uuid.UUID, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB, feedback chan int) {
