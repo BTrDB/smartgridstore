@@ -14,6 +14,10 @@ import (
 	logging "github.com/op/go-logging"
 )
 
+const VersionMajor = 4
+const VersionMinor = 1
+const VersionPatch = 0
+
 var logger *logging.Logger
 
 func init() {
@@ -33,46 +37,9 @@ var aliasCache map[string]cacheEntry
 
 var FAILUREMSG = make([]byte, 4, 4)
 
-func lookupAlias(serial string) (string, bool) {
-	rh := <-rhPool
-	defer func() { rhPool <- rh }()
-	rv, err := rh.GetOmapValues("meta.aliases", "", serial, 1)
-	if err != nil {
-		if err == rados.RadosErrorNotFound {
-			return "", false
-		}
-		logger.Panicf("Got alias lookup error: %v", err)
-	}
-	real_rv, ok := rv[serial]
-	if ok {
-		return string(real_rv), true
-	}
-	return "", false
-}
-
-func lookupAliasCache(serial string) string {
-	aliasCacheMu.Lock()
-	defer aliasCacheMu.Unlock()
-	ce, ok := aliasCache[serial]
-	if ok {
-		if ce.found {
-			return ce.alias
-		}
-		if time.Now().Sub(ce.time) > ReLookupInterval {
-			al, ok := lookupAlias(serial)
-			aliasCache[serial] = cacheEntry{alias: al, found: ok, time: time.Now()}
-			if ok {
-				return al
-			}
-			return "? (" + serial + ")"
-		}
-	}
-	al, ok := lookupAlias(serial)
-	aliasCache[serial] = cacheEntry{alias: al, found: ok, time: time.Now()}
-	if ok {
-		return al
-	}
-	return "? (" + serial + ")"
+func lookupAlias(serial string) string {
+	//TODO maybe replace this with some etcd based alias from the manifest
+	return fmt.Sprintf("psl.pqube3.%s", serial)
 }
 
 var rhPool chan *rados.IOContext
@@ -273,7 +240,7 @@ func handlePMUConn(conn *net.TCPConn) {
 						fmt.Printf("WARNING: got %d extra bytes\n", n-bpos)
 					}
 					// if we've reached this point, we have all the data
-					alias := lookupAliasCache(sernum)
+					alias := lookupAlias(sernum)
 					recvdfull = true
 					fmt.Printf("Received %s: serial number is %s (%s), length is %v\n", filepath, sernum, alias, lendt)
 					resp = processMessage(sendid, conn.RemoteAddr().String(), sernum, filepath, dtbuffer[:lendt])
@@ -293,6 +260,11 @@ func handlePMUConn(conn *net.TCPConn) {
 }
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "-version" {
+		fmt.Printf("%d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+		os.Exit(0)
+	}
+	fmt.Printf("Booting receiver version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
 	//Load variables
 	prt := os.Getenv("RECEIVER_PORT")
 	if prt == "" {

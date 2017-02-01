@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mrplotter
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: mrplotter
+    spec:
+      containers:
+      - name: mrplotter
+        image: btrdb/mrplotter:latest
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: BTRDB_ENDPOINTS
+            value: http://btrdb-bootstrap:4410
+        ports:
+        - containerPort: 443
+          protocol: TCP
+        - containerPort: 80
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mrplotter
+  labels:
+    app: mrplotter
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 443
+    targetPort: 443
+    name: https
+  externalIPs:
+    #here you should choose some IP addresses in your cluster that you
+    #would like mrplotter to be available on. Ensure that port 443 and port 80
+    #are not already used on the machines these IPs route to
+    #eg
+    #- 128.32.10.10
+    #- 128.32.10.11
+    #you can have as many or as few IPs here as you want, they are round
+    #robin'd to the replicas you declare above (e.g you can have 1:2 or 3:2)
+  selector:
+    app: mrplotter

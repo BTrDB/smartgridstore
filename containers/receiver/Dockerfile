@@ -1,14 +1,12 @@
+FROM ubuntu:xenial
 
-FROM btrdb/ceph
+ENV CEPH_VERSION jewel
 
-RUN apt-get update && apt-get install -y net-tools git build-essential vim wget
-RUN wget -O /tmp/go.tar.gz https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz && tar -xf /tmp/go.tar.gz -C /usr/local/ && rm /tmp/go.tar.gz && mkdir /srv/go
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/srv/go/bin GOPATH=/srv/go
+RUN apt-get update && apt-get install -y wget && \
+    wget -q -O- 'https://download.ceph.com/keys/release.asc' | apt-key add - && \
+    echo "deb http://download.ceph.com/debian-${CEPH_VERSION}/ xenial main" | tee /etc/apt/sources.list.d/ceph-${CEPH_VERSION}.list && \
+    apt-get update && apt-get install -y librados-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV GOTRACEBACK=all
-ENV GOGC=40
-RUN go get github.com/maruel/panicparse/cmd/pp
-RUN go get github.com/SoftwareDefinedBuildings/uPMU-daemon/receiver
-ADD entrypoint.sh /
-RUN chmod a+x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+ADD receiver /bin/
+ENTRYPOINT ["/bin/receiver"]
