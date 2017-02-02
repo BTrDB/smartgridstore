@@ -1,5 +1,7 @@
 package admincli
 
+import "context"
+
 const MaxHintLength = 50
 
 type CLIModule interface {
@@ -26,7 +28,10 @@ type CLIModule interface {
 	//and the Usage() string will be sent to the user. For more
 	//complex argument problems (nonexistent object for example),
 	//return argsOk true and print more detailed messages on
-	//the output. Always close the output channel when the command
-	//is complete. Do not read any input from the user.
-	Run(output chan string, args ...string) (argsOk bool)
+	//the output. Do not close output. Return when the command is done.
+	//Do not write to output after returning
+	//The context will contain the final window width as well.
+	//ctx.Value(adminCli.ConsoleWidth) will be an integer. -1 if unknown
+	//and >1 if the width is known
+	Run(ctx context.Context, output chan string, args ...string) (argsOk bool)
 }

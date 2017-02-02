@@ -23,7 +23,7 @@ import (
 
 const VersionMajor = 4
 const VersionMinor = 1
-const VersionPatch = 0
+const VersionPatch = 1
 
 var btrdbconn *btrdb.BTrDB
 var ytagbase int = 0
@@ -106,7 +106,7 @@ func main() {
 
 	btrdbconn, err = btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
 	if err != nil {
-		fmt.Printf("Error connecting to the QUASAR database: %v\n", err)
+		fmt.Printf("Error connecting to the BTrDB: %v\n", err)
 		return
 	}
 

@@ -17,6 +17,8 @@ spec:
             value: http://etcd:2379
           - name: RECEIVER_POOL
             value: btrdb
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/
