@@ -143,15 +143,21 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("Configuration file changed. Restarting in 15 seconds...")
-			time.Sleep(15 * time.Second)
 			terminate = false
 			alive = false
 		}
 	}()
 
+	firstloop := true
+
 	for !terminate {
 		// If we die, just terminate (unless this is set differently)
+		if !firstloop {
+			fmt.Println("Restarting in 15 seconds...")
+			time.Sleep(15 * time.Second)
+		}
+		firstloop = false
+
 		alive = true
 		terminate = true
 
@@ -160,7 +166,7 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 
 		var num_uPMUs int = 0
-		var uuids []string
+		var uuids []uuid.UUID
 		var ytagnum int64
 
 		ytagbytes := getEtcdKeySafe(ctx, etcdConn, etcdPrefix+"ingester/generation")
@@ -185,10 +191,10 @@ func main() {
 			key := string(kv.Key)
 			identifier := key[len(etcdPrefix)+len(MANIFEST_PREFIX):]
 			serial := strings.SplitN(identifier, ".", 3)[2]
-			uuids = make([]string, 0, len(upmuparser.STREAMS))
+			uuids = make([]uuid.UUID, 0, len(upmuparser.STREAMS))
 			for _, canonical := range upmuparser.STREAMS {
-				uuid := uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s", identifier, canonical)))
-				uuids = append(uuids, uuid.String())
+				uu := uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s", identifier, canonical)))
+				uuids = append(uuids, uu)
 			}
 			wg.Add(1)
 			fmt.Printf("Starting process loop of uPMU %v\n", identifier)
@@ -207,14 +213,7 @@ func main() {
 	}
 }
 
-func startProcessLoop(ctx context.Context, serial_number string, alias string, uuid_strings []string, alivePtr *bool, wg *sync.WaitGroup) {
-	var uuids = make([]uuid.UUID, len(uuid_strings))
-
-	var i int
-
-	for i = 0; i < len(uuids); i++ {
-		uuids[i] = uuid.Parse(uuid_strings[i])
-	}
+func startProcessLoop(ctx context.Context, serial_number string, alias string, uuids []uuid.UUID, alivePtr *bool, wg *sync.WaitGroup) {
 	mgo_addr := os.Getenv("MONGO_ADDR")
 	if mgo_addr == "" {
 		mgo_addr = "localhost:27017"
