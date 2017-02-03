@@ -251,7 +251,7 @@ func process(ctx context.Context, sernum string, alias string, uuids []uuid.UUID
 	rh := <-rhPool
 	defer func() { rhPool <- rh }()
 	oid := fmt.Sprintf("meta.gen.%d", ytagbase)
-	prefix := fmt.Sprintf("data.%s", sernum)
+	prefix := fmt.Sprintf("data.psl.pqube3.%s", sernum)
 	todo, err := rh.GetOmapValues(oid, "", prefix, 100)
 	if err != nil {
 		fmt.Printf("Could not check for additional files for uPMU %v: %v\nTerminating program...\n", alias, err)
