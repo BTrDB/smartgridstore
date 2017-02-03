@@ -32,6 +32,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	yaml "gopkg.in/yaml.v2"
@@ -232,10 +233,16 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 						key := kvslice[0]
 						val := kvslice[1]
 						if streamname == "" {
+							if dev.Metadata == nil {
+								dev.Metadata = make(map[string]string)
+							}
 							dev.Metadata[key] = val
 						} else {
 							stream, ok := dev.Streams[streamname]
 							if ok {
+								if stream.Metadata == nil {
+									stream.Metadata = make(map[string]string)
+								}
 								stream.Metadata[key] = val
 							} else {
 								stream = &manifest.ManifestDeviceStream{
@@ -334,6 +341,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 							continue
 						}
 						writeStringf(output, "%s: %s\n", dev.Descriptor, string(marshalled))
+						fmt.Fprintln(os.Stdout, marshalled)
 					}
 					return
 				},

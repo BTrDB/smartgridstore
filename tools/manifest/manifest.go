@@ -63,7 +63,7 @@ func RetrieveMultipleManifestDevices(ctx context.Context, etcdClient *etcd.Clien
 	etcdKeyPrefix := getEtcdKey(descprefix)
 	devs := make([]*ManifestDevice, 0, 1024)
 	err := etcdstruct.RetrieveEtcdStructs(ctx, etcdClient, func(key []byte) etcdstruct.EtcdStruct {
-		dev := &ManifestDevice{Descriptor: string(key)}
+		dev := &ManifestDevice{Descriptor: getNameFromEtcdKey(string(key))}
 		devs = append(devs, dev)
 		return dev
 	}, func(es etcdstruct.EtcdStruct, key []byte) {
