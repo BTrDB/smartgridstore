@@ -34,6 +34,8 @@ import (
 	"io"
 	"strings"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/immesys/smartgridstore/admincli"
 	"github.com/immesys/smartgridstore/tools/manifest"
 
@@ -131,7 +133,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 		},
 		MChildren: []admincli.CLIModule{
 			&ManifestCommand{
-				name:      "adddev",
+				name:      "add",
 				usageargs: "descriptor [key1=value1] [key2=value2] ...",
 				hint:      "creates a new device with the provided descriptor",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
@@ -158,7 +160,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 				},
 			},
 			&ManifestCommand{
-				name:      "rmdev",
+				name:      "del",
 				usageargs: "descriptor1 [descriptor2] [descriptor3] ...",
 				hint:      "deletes devices from the manifest",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
@@ -175,7 +177,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 				},
 			},
 			&ManifestCommand{
-				name:      "rmdevs",
+				name:      "delprefix",
 				usageargs: "descriptorprefix",
 				hint:      "deletes all devices with a certain prefix",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
@@ -303,6 +305,36 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 						return
 					}
 					writeError(output, err)
+					return
+				},
+			},
+			&ManifestCommand{
+				name:      "lsdevs",
+				usageargs: "[prefix]",
+				hint:      "Lists metadata for all devices with a given prefix",
+				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
+					if argsOK = len(tokens) == 0 || len(tokens) == 1; !argsOK {
+						return
+					}
+
+					prefix := ""
+					if len(tokens) == 1 {
+						prefix = tokens[0]
+					}
+
+					devs, err := manifest.RetrieveMultipleManifestDevices(ctx, etcdClient, prefix)
+					if waserr, _ := writeError(output, err); waserr {
+						return
+					}
+
+					for _, dev := range devs {
+						marshalled, err := yaml.Marshal(dev)
+						if err != nil {
+							writeStringln(output, "[CORRUPT ENTRY]")
+							continue
+						}
+						writeStringf(output, "%s: %s\n", dev.Descriptor, string(marshalled))
+					}
 					return
 				},
 			},
