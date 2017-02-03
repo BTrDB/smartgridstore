@@ -64,11 +64,8 @@ func (s *sess) CurrentModule() admincli.CLIModule {
 	return s.path[len(s.path)-1]
 }
 func trWrite(w io.Writer, s string) {
-	fmt.Printf("msg was, %s\n", s)
 	rs := strings.Replace(s, "\n", "\r\n", -1)
-	fmt.Printf("msg is now %s\n", rs)
-	c, err := w.Write([]byte(rs))
-	fmt.Printf("c=%v err=%v\n", c, err)
+	w.Write([]byte(rs))
 }
 func (s *sess) List() string {
 	var buffer bytes.Buffer
@@ -89,7 +86,11 @@ func (s *sess) List() string {
 		if !c.Runnable() {
 			n = "/" + n
 		}
-		buffer.WriteString(fmt.Sprintf(pfx+" - %s\n", n, c.Hint()))
+		if c.Hint() == "" {
+			buffer.WriteString(fmt.Sprintf("%s\n", n))
+		} else {
+			buffer.WriteString(fmt.Sprintf(pfx+" - %s\n", n, c.Hint()))
+		}
 	}
 	rv := buffer.String()
 	return strings.TrimSuffix(rv, "\n")
@@ -116,8 +117,16 @@ func (s *sess) GetCmd(args []string) (admincli.CLIModule, string) {
 		}
 		return nil, fmt.Sprintf("submodule '%s' not found", args[1])
 	case "help", "man":
+		if len(args) == 2 {
+			for _, c := range s.CurrentModule().Children() {
+				if args[1] == c.Name() {
+					return nil, c.Name() + c.Usage()
+				}
+			}
+			return nil, fmt.Sprintf("submodule '%s' not found", args[1])
+		}
 		return nil, fmt.Sprintf("%s%s\r\n%s", s.CurrentModule().Name(), s.CurrentModule().Usage(), s.List())
-	case "ls":
+	case "ls", "l":
 		return nil, s.List()
 	case "exit", "quit":
 		s.parentCancel()
@@ -149,10 +158,9 @@ func (s *sess) OnChange(line []rune, pos int, key rune) (newLine []rune, newPos 
 func dummyF() error {
 	return nil
 }
-func handleSession(link io.ReadWriteCloser, widthch chan int, rid string) {
-	fmt.Printf("hs start\n")
+func handleSession(link io.ReadWriteCloser, widthch chan int, user, ip string, root admincli.CLIModule) {
 	s := &sess{}
-	s.path = []admincli.CLIModule{getRootCLIModule()}
+	s.path = []admincli.CLIModule{root}
 	var width uint64 = 80
 	go func() {
 		for w := range widthch {
@@ -172,8 +180,8 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, rid string) {
 	cfg := readline.Config{
 		Prompt:              "> ",
 		AutoComplete:        s,
-		InterruptPrompt:     "Interrupt received, aborting current command",
-		EOFPrompt:           "Disconnecting from SGS admin console",
+		InterruptPrompt:     "^C",
+		EOFPrompt:           "\r\nDisconnecting from SGS admin console",
 		FuncGetWidth:        getWidth,
 		Stdin:               link,
 		Stdout:              link,
@@ -199,7 +207,7 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, rid string) {
 	defer parentCancel()
 	for {
 		l, err := inst.Readline()
-		fmt.Printf("[audit %s] %s\n", rid, l)
+		fmt.Printf("[audit %s/%s] %s\n", user, ip, l)
 		link.Write([]byte("\r"))
 		//trWrite(link, "\n")
 		if err != nil {
@@ -219,7 +227,10 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, rid string) {
 		}
 		cmd, msg := s.GetCmd(args)
 		if msg != "" {
-			trWrite(link, msg+"\n")
+			if !strings.HasSuffix(msg, "\n") {
+				msg += "\n"
+			}
+			trWrite(link, msg)
 			continue
 		}
 		if cmd == nil {
@@ -241,6 +252,9 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, rid string) {
 			}
 			if !ok {
 				icp.Write([]byte(cmd.Name() + cmd.Usage()))
+				if !strings.HasSuffix(cmd.Usage(), "\n") {
+					icp.Write([]byte("\n"))
+				}
 			}
 			cancel()
 		}()

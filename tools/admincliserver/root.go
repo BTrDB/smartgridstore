@@ -1,24 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/SoftwareDefinedBuildings/mr-plotter/accounts"
 	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/immesys/smartgridstore/acl"
 	"github.com/immesys/smartgridstore/admincli"
 	mrplotterconf "github.com/samkumar/mr-plotter-conf/cli"
 )
 
-type rootCLIModule struct {
-	children []admincli.CLIModule
-}
-
-var r *rootCLIModule
-
-func InitRootModule(c *etcd.Client) {
+func GetRootModule(c *etcd.Client, user string) admincli.CLIModule {
 
 	etcdKeyPrefix := os.Getenv("ETCD_KEY_PREFIX")
 	if len(etcdKeyPrefix) != 0 {
@@ -27,34 +20,12 @@ func InitRootModule(c *etcd.Client) {
 	}
 
 	mrp := mrplotterconf.NewMrPlotterCLIModule(c)
-	r = &rootCLIModule{children: []admincli.CLIModule{
-		mrp,
-	}}
-}
-func getRootCLIModule() admincli.CLIModule {
+	acl := acl.NewACLModule(c, user)
+	r := &admincli.GenericCLIModule{
+		MChildren: []admincli.CLIModule{
+			mrp,
+			acl,
+		},
+	}
 	return r
-}
-
-func (r *rootCLIModule) Children() []admincli.CLIModule {
-	return r.children
-}
-
-func (r *rootCLIModule) Name() string {
-	return ""
-}
-
-func (r *rootCLIModule) Hint() string {
-	return ""
-}
-
-func (r *rootCLIModule) Usage() string {
-	return "Smart Grid Store management console, root level.\nThe various subsystems can be listed with the 'ls' command"
-}
-
-func (r *rootCLIModule) Runnable() bool {
-	return false
-}
-
-func (r *rootCLIModule) Run(ctx context.Context, output io.Writer, args ...string) bool {
-	return false
 }

@@ -18,7 +18,7 @@ import (
 
 const VersionMajor = 4
 const VersionMinor = 1
-const VersionPatch = 2
+const VersionPatch = 4
 
 var etcdClient *etcd.Client
 
@@ -46,6 +46,7 @@ func checkBootstrapPassword() {
 
 func passwordAuth(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 	if !validUsername.MatchString(c.User()) {
+		time.Sleep(1 * time.Second)
 		return nil, fmt.Errorf("invalid username %q", c.User())
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -57,12 +58,14 @@ func passwordAuth(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 	for _, ev := range resp.Kvs {
 		err := bcrypt.CompareHashAndPassword(ev.Value, pass)
 		if err != nil {
+			time.Sleep(1 * time.Second)
 			return nil, fmt.Errorf("password rejected for %q", c.User())
 		} else {
 			fmt.Printf("[audit] password accepted for %q", c.User())
 			return nil, nil
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return nil, fmt.Errorf("password rejected for %q", c.User())
 }
 
@@ -85,7 +88,6 @@ func main() {
 		os.Exit(1)
 	}
 	checkBootstrapPassword()
-	InitRootModule(etcdClient)
 
 	config := &ssh.ServerConfig{
 		PasswordCallback: passwordAuth,
@@ -127,18 +129,18 @@ func main() {
 		// Discard all global out-of-band Requests
 		go ssh.DiscardRequests(reqs)
 		// Accept all channels
-		go handleChannels(chans, fmt.Sprintf("%s/%s", sshConn.User(), sshConn.RemoteAddr()))
+		go handleChannels(chans, sshConn.User(), sshConn.RemoteAddr().String())
 	}
 }
 
-func handleChannels(chans <-chan ssh.NewChannel, id string) {
+func handleChannels(chans <-chan ssh.NewChannel, user, ip string) {
 	// Service the incoming Channel channel in go routine
 	for newChannel := range chans {
-		go handleChannel(newChannel, id)
+		go handleChannel(newChannel, user, ip)
 	}
 }
 
-func handleChannel(newChannel ssh.NewChannel, id string) {
+func handleChannel(newChannel ssh.NewChannel, user, ip string) {
 	// Since we're handling a shell, we expect a
 	// channel type of "session". The also describes
 	// "x11", "direct-tcpip" and "forwarded-tcpip"
@@ -158,7 +160,8 @@ func handleChannel(newChannel ssh.NewChannel, id string) {
 
 	widthchan := make(chan int, 10)
 	startS := func() {
-		handleSession(connection, widthchan, id)
+		module := GetRootModule(etcdClient, user)
+		handleSession(connection, widthchan, user, ip, module)
 		connection.Close()
 		log.Printf("Session closed")
 	}
