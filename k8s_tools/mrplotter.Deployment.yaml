@@ -16,7 +16,7 @@ spec:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379
           - name: BTRDB_ENDPOINTS
-            value: http://btrdb-bootstrap:4410
+            value: btrdb-bootstrap:4410
         ports:
         - containerPort: 443
           protocol: TCP

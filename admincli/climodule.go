@@ -36,3 +36,36 @@ type CLIModule interface {
 	//and >1 if the width is known
 	Run(ctx context.Context, output io.Writer, args ...string) (argsOk bool)
 }
+
+type GenericCLIModule struct {
+	MChildren []CLIModule
+	MName     string
+	MHint     string
+	MUsage    string
+	MRunnable bool
+	MRun      func(context.Context, io.Writer, ...string) bool
+}
+
+func (g *GenericCLIModule) Children() []CLIModule {
+	return g.MChildren
+}
+
+func (g *GenericCLIModule) Name() string {
+	return g.MName
+}
+
+func (g *GenericCLIModule) Hint() string {
+	return g.MHint
+}
+
+func (g *GenericCLIModule) Usage() string {
+	return g.MUsage
+}
+
+func (g *GenericCLIModule) Runnable() bool {
+	return g.MRunnable
+}
+
+func (g *GenericCLIModule) Run(ctx context.Context, output io.Writer, args ...string) (argsOk bool) {
+	return g.MRun(ctx, output, args...)
+}
