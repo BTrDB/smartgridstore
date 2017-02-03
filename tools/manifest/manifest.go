@@ -23,8 +23,8 @@ type ManifestDeviceStream struct {
 
 type ManifestDevice struct {
 	Descriptor string                           `codec:"-"`
-	Metadata   map[string]string                `codec:"metadata,empty"`
-	Streams    map[string]*ManifestDeviceStream `codec:",omitempty"`
+	Metadata   map[string]string                `codec:"metadata,omitempty"`
+	Streams    map[string]*ManifestDeviceStream `codec:"streams"`
 
 	retrievedRevision int64
 }
@@ -78,8 +78,8 @@ func RetrieveMultipleManifestDevices(ctx context.Context, etcdClient *etcd.Clien
 	return devs, err
 }
 
-func DeleteManifestDevice(ctx context.Context, etcdClient *etcd.Client, md *ManifestDevice) error {
-	_, err := etcdstruct.DeleteEtcdStructs(ctx, etcdClient, getEtcdKey(md.Descriptor))
+func DeleteManifestDevice(ctx context.Context, etcdClient *etcd.Client, descriptor string) error {
+	_, err := etcdstruct.DeleteEtcdStructs(ctx, etcdClient, getEtcdKey(descriptor))
 	return err
 }
 

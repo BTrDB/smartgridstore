@@ -34,8 +34,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/SoftwareDefinedBuildings/mr-plotter/accounts"
 	"github.com/immesys/smartgridstore/admincli"
+	"github.com/immesys/smartgridstore/tools/manifest"
 
 	etcd "github.com/coreos/etcd/clientv3"
 )
@@ -125,24 +125,30 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 		MName:     "manifest",
 		MHint:     "configure registered phasor measurement units",
 		MUsage:    "TODO",
-		MRunnable: true,
+		MRunnable: false,
 		MRun: func(ctx context.Context, output io.Writer, arguments ...string) bool {
 			return false
 		},
 		MChildren: []admincli.CLIModule{
 			&ManifestCommand{
-				name:      "adduser",
-				usageargs: "username password [tag1] [tag2] ...",
-				hint:      "creates a new user account",
+				name:      "adddev",
+				usageargs: "descriptor [key1=value1] [key2=value2] ...",
+				hint:      "creates a new device with the provided descriptor",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 2; !argsOK {
+					if argsOK = len(tokens) >= 1; !argsOK {
 						return
 					}
-					tagSet := sliceToSet(tokens[2:])
-					tagSet[accounts.PUBLIC_TAG] = struct{}{}
-					acc := &accounts.MrPlotterAccount{Username: tokens[0], Tags: tagSet}
-					acc.SetPassword([]byte(tokens[1]))
-					success, err := accounts.UpsertAccountAtomically(ctx, etcdClient, acc)
+					metadata := make(map[string]string)
+					for _, kv := range tokens[1:] {
+						kvslice := strings.Split(kv, "=")
+						if len(kvslice) != 2 {
+							writeStringln(output, "metadata must be of the form key=value")
+							return
+						}
+						metadata[kvslice[0]] = kvslice[1]
+					}
+					dev := &manifest.ManifestDevice{Descriptor: tokens[0], Metadata: metadata, Streams: make(map[string]*manifest.ManifestDeviceStream)}
+					success, err := manifest.UpsertManifestDeviceAtomically(ctx, etcdClient, dev)
 					if !success {
 						writeStringln(output, alreadyExists)
 						return
@@ -152,37 +158,15 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 				},
 			},
 			&ManifestCommand{
-				name:      "setpassword",
-				usageargs: "username password",
-				hint:      "sets a user's password",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) == 2; !argsOK {
-						return
-					}
-					acc, err := accounts.RetrieveAccount(ctx, etcdClient, tokens[0])
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-					acc.SetPassword([]byte(tokens[1]))
-					success, err := accounts.UpsertAccountAtomically(ctx, etcdClient, acc)
-					if !success {
-						writeStringln(output, txFail)
-						return
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "rmuser",
-				usageargs: "username1 [username2] [username3 ...]",
-				hint:      "deletes user accounts",
+				name:      "rmdev",
+				usageargs: "descriptor1 [descriptor2] [descriptor3] ...",
+				hint:      "deletes devices from the manifest",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
 					if argsOK = len(tokens) >= 1; !argsOK {
 						return
 					}
-					for _, username := range tokens {
-						err := accounts.DeleteAccount(ctx, etcdClient, username)
+					for _, descriptor := range tokens {
+						err := manifest.DeleteManifestDevice(ctx, etcdClient, descriptor)
 						if waserr, _ := writeError(output, err); waserr {
 							return
 						}
@@ -191,246 +175,77 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 				},
 			},
 			&ManifestCommand{
-				name:      "rmusers",
-				usageargs: "usernameprefix",
-				hint:      "deletes all user accounts with a certain prefix",
+				name:      "rmdevs",
+				usageargs: "descriptorprefix",
+				hint:      "deletes all devices with a certain prefix",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
 					if argsOK = len(tokens) == 1; !argsOK {
 						return
 					}
-					n, err := accounts.DeleteMultipleAccounts(ctx, etcdClient, tokens[0])
+					n, err := manifest.DeleteMultipleManifestDevices(ctx, etcdClient, tokens[0])
 					if n == 1 {
-						writeStringln(output, "Deleted 1 account")
+						writeStringln(output, "Deleted 1 device")
 					} else {
-						writeStringf(output, "Deleted %v accounts\n", n)
+						writeStringf(output, "Deleted %v devices\n", n)
 					}
 					writeError(output, err)
 					return
 				},
 			},
 			&ManifestCommand{
-				name:      "grant",
-				usageargs: "username tag1 [tag2] [tag3] ...",
-				hint:      "grants permission to view streams with given tags",
+				name:      "setmeta",
+				usageargs: "descriptor[/streamname] key1=value1 [key2=value2] [key3=value3] ...",
+				hint:      "set metadata",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
 					if argsOK = len(tokens) >= 2; !argsOK {
 						return
 					}
-					acc, err := accounts.RetrieveAccount(ctx, etcdClient, tokens[0])
+					dparts := strings.Split(tokens[0], "/")
+
+					var desc string
+					var streamname string
+					if len(dparts) == 1 {
+						desc = tokens[0]
+						streamname = ""
+					} else {
+						desc = dparts[0]
+						streamname = dparts[1]
+					}
+					if len(dparts) > 2 {
+						writeStringln(output, "First argument must be either of the form \"descriptor\" or \"descriptor/streamname\"")
+						return
+					}
+
+					dev, err := manifest.RetrieveManifestDevice(ctx, etcdClient, desc)
 					if waserr, _ := writeError(output, err); waserr {
 						return
 					}
-					for _, tag := range tokens[1:] {
-						if _, ok := acc.Tags[tag]; !ok {
-							acc.Tags[tag] = struct{}{}
-						}
-					}
-					success, err := accounts.UpsertAccountAtomically(ctx, etcdClient, acc)
-					if !success {
-						writeStringln(output, txFail)
-						return
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "revoke",
-				usageargs: "username tag1 [tag2] [tag3] ...",
-				hint:      "revokes tags from a user's permission list",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 2; !argsOK {
-						return
-					}
-					acc, err := accounts.RetrieveAccount(ctx, etcdClient, tokens[0])
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-					for _, tag := range tokens[1:] {
-						if tag == accounts.PUBLIC_TAG {
-							writeStringf(output, "All user accounts must be assigned the \"%s\" tag\n", accounts.PUBLIC_TAG)
+
+					for _, kv := range tokens[1:] {
+						kvslice := strings.Split(kv, "=")
+						if len(kvslice) != 2 {
+							writeStringln(output, "metadata must be of the form key=value")
 							return
 						}
-						if _, ok := acc.Tags[tag]; ok {
-							delete(acc.Tags, tag)
-						}
-					}
-					success, err := accounts.UpsertAccountAtomically(ctx, etcdClient, acc)
-					if !success {
-						writeStringln(output, txFail)
-						return
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "showuser",
-				usageargs: "username1 [username2] [username3] ...",
-				hint:      "shows the tags granted to a user or users",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 1; !argsOK {
-						return
-					}
-					for _, username := range tokens {
-						acc, err := accounts.RetrieveAccount(ctx, etcdClient, username)
-						if waserr, _ := writeError(output, err); waserr {
-							return
-						}
-						tagSlice := setToSlice(acc.Tags)
-						writeStringf(output, "%s: %s\n", username, strings.Join(tagSlice, " "))
-					}
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "lsusers",
-				usageargs: "[prefix]",
-				hint:      "shows the tags granted to all user accounts with a given prefix",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) == 0 || len(tokens) == 1; !argsOK {
-						return
-					}
-
-					prefix := ""
-					if len(tokens) == 1 {
-						prefix = tokens[0]
-					}
-
-					accs, err := accounts.RetrieveMultipleAccounts(ctx, etcdClient, prefix)
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-
-					for _, acc := range accs {
-						if acc.Tags == nil {
-							writeStringf(output, "%s [CORRUPT ENTRY]\n", acc.Username)
+						key := kvslice[0]
+						val := kvslice[1]
+						if streamname == "" {
+							dev.Metadata[key] = val
 						} else {
-							tagSlice := setToSlice(acc.Tags)
-							writeStringf(output, "%s: %s\n", acc.Username, strings.Join(tagSlice, " "))
-						}
-					}
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "deftag",
-				usageargs: "tag pathprefix1 [pathprefix2] ...",
-				hint:      "defines a new tag",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 2; !argsOK {
-						return
-					}
-					if tokens[0] == accounts.ALL_TAG {
-						writeStringln(output, alreadyExists)
-						return
-					}
-					pfxSet := sliceToSet(tokens[1:])
-					tagdef := &accounts.MrPlotterTagDef{Tag: tokens[0], PathPrefix: pfxSet}
-					success, err := accounts.UpsertTagDefAtomically(ctx, etcdClient, tagdef)
-					if !success {
-						writeStringln(output, alreadyExists)
-						return
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "undeftag",
-				usageargs: "tag1 [tag2] [tag3] ...",
-				hint:      "deletes tag definitions",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 1; !argsOK {
-						return
-					}
-					for _, tagname := range tokens {
-						if tagname == accounts.ALL_TAG {
-							writeStringf(output, "Tag \"%s\" cannot be deleted\n", accounts.ALL_TAG)
-							return
-						}
-						err := accounts.DeleteTagDef(ctx, etcdClient, tagname)
-						if waserr, _ := writeError(output, err); waserr {
-							return
-						}
-					}
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "undeftags",
-				usageargs: "prefix",
-				hint:      "deletes tag definitions beginning with a certain prefix",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) == 1; !argsOK {
-						return
-					}
-					n, err := accounts.DeleteMultipleTagDefs(ctx, etcdClient, tokens[0])
-					if n == 1 {
-						writeStringln(output, "Deleted 1 tag definition")
-					} else {
-						writeStringf(output, "Deleted %v tag definitions\n", n)
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "addprefix",
-				usageargs: "tag prefix1 [prefix2] [prefix3] ...",
-				hint:      "adds a path prefix to a tag definition",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 2; !argsOK {
-						return
-					}
-					if tokens[0] == accounts.ALL_TAG {
-						writeStringf(output, "Cannot modify definition of \"%s\" tag\n", accounts.ALL_TAG)
-						return
-					}
-					tagdef, err := accounts.RetrieveTagDef(ctx, etcdClient, tokens[0])
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-					for _, pfx := range tokens[1:] {
-						if _, ok := tagdef.PathPrefix[pfx]; !ok {
-							tagdef.PathPrefix[pfx] = struct{}{}
-						}
-					}
-					success, err := accounts.UpsertTagDefAtomically(ctx, etcdClient, tagdef)
-					if !success {
-						writeStringln(output, txFail)
-						return
-					}
-					writeError(output, err)
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "rmprefix",
-				usageargs: "tag prefix1 [prefix2] [prefix3] ...",
-				hint:      "removes a path prefix from a tag definition",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 2; !argsOK {
-						return
-					}
-					if tokens[0] == accounts.ALL_TAG {
-						writeStringf(output, "Cannot modify definition of \"%s\" tag\n", accounts.ALL_TAG)
-						return
-					}
-					tagdef, err := accounts.RetrieveTagDef(ctx, etcdClient, tokens[0])
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-					for _, pfx := range tokens[1:] {
-						if _, ok := tagdef.PathPrefix[pfx]; ok {
-							if len(tagdef.PathPrefix) == 1 {
-								writeStringln(output, "Each tag must be assigned at least one prefix (use undeftag or undeftags to fully remove a tag)")
-								return
+							stream, ok := dev.Streams[streamname]
+							if ok {
+								stream.Metadata[key] = val
+							} else {
+								stream = &manifest.ManifestDeviceStream{
+									CanonicalName: streamname,
+									Metadata:      map[string]string{key: val},
+								}
+								dev.Streams[streamname] = stream
 							}
-							delete(tagdef.PathPrefix, pfx)
 						}
 					}
-					success, err := accounts.UpsertTagDefAtomically(ctx, etcdClient, tagdef)
+
+					success, err := manifest.UpsertManifestDeviceAtomically(ctx, etcdClient, dev)
 					if !success {
 						writeStringln(output, txFail)
 						return
@@ -440,116 +255,54 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 				},
 			},
 			&ManifestCommand{
-				name:      "showtagdef",
-				usageargs: "tag1 [tag2] [tag3] ...",
-				hint:      "lists the prefixes assigned to a tag",
+				name:      "delmeta",
+				usageargs: "descriptor[/streamname] key1 [key2] [key3] ...",
+				hint:      "deletes metadata key-value pairs",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) >= 1; !argsOK {
+					if argsOK = len(tokens) >= 2; !argsOK {
 						return
 					}
-					for _, tagname := range tokens {
-						if tagname == accounts.ALL_TAG {
-							writeStringf(output, "%s: %s\n", accounts.ALL_TAG, AllTagSymbol)
-							continue
-						}
-						tagdef, err := accounts.RetrieveTagDef(ctx, etcdClient, tagname)
-						if waserr, _ := writeError(output, err); waserr {
-							return
-						}
-						pfxSlice := setToSlice(tagdef.PathPrefix)
-						writeStringf(output, "%s: %s\n", tagname, strings.Join(pfxSlice, " "))
+					dparts := strings.Split(tokens[0], "/")
+
+					var desc string
+					var streamname string
+					if len(dparts) == 1 {
+						desc = tokens[0]
+						streamname = ""
+					} else {
+						desc = dparts[0]
+						streamname = dparts[1]
 					}
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "lstagdefs",
-				usageargs: "[tagprefix]",
-				hint:      "lists the prefixes assigned to all tags beginning with a given prefix",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) == 0 || len(tokens) == 1; !argsOK {
+					if len(dparts) > 2 {
+						writeStringln(output, "First argument must be either of the form \"descriptor\" or \"descriptor/streamname\"")
 						return
 					}
 
-					prefix := ""
-					if len(tokens) == 1 {
-						prefix = tokens[0]
-					}
-
-					tagdefs, err := accounts.RetrieveMultipleTagDefs(ctx, etcdClient, prefix)
+					dev, err := manifest.RetrieveManifestDevice(ctx, etcdClient, desc)
 					if waserr, _ := writeError(output, err); waserr {
 						return
 					}
 
-					if strings.HasPrefix(accounts.ALL_TAG, prefix) {
-						writeStringf(output, "%s: %s\n", accounts.ALL_TAG, AllTagSymbol)
-					}
-					for _, tagdef := range tagdefs {
-						if tagdef.Tag == accounts.ALL_TAG {
-							continue
-						}
-						if tagdef.PathPrefix == nil {
-							writeStringf(output, "%s [CORRUPT ENTRY]\n", tagdef.Tag)
+					for _, key := range tokens[1:] {
+						if streamname == "" {
+							delete(dev.Metadata, key)
 						} else {
-							pfxSlice := setToSlice(tagdef.PathPrefix)
-							writeStringf(output, "%s: %s\n", tagdef.Tag, strings.Join(pfxSlice, " "))
-						}
-					}
-					return
-				},
-			},
-			&ManifestCommand{
-				name:      "lsconf",
-				usageargs: "[prefix]",
-				hint:      "lists the path prefixes currently visible to each user",
-				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
-					if argsOK = len(tokens) == 0 || len(tokens) == 1; !argsOK {
-						return
-					}
-
-					prefix := ""
-					if len(tokens) == 1 {
-						prefix = tokens[0]
-					}
-
-					accs, err := accounts.RetrieveMultipleAccounts(ctx, etcdClient, prefix)
-					if waserr, _ := writeError(output, err); waserr {
-						return
-					}
-
-					tagcache := make(map[string]map[string]struct{})
-
-					for _, acc := range accs {
-						if acc.Tags == nil {
-							writeStringf(output, "%s [CORRUPT ENTRY]\n", acc.Username)
-						} else {
-							prefixes := make(map[string]struct{})
-							for tag := range acc.Tags {
-								var tagPfxSet map[string]struct{}
-								var ok bool
-
-								/* The ALL tag overrides everything. */
-								if tag == accounts.ALL_TAG {
-									prefixes = make(map[string]struct{})
-									prefixes[AllTagSymbol] = struct{}{}
-									break
-								}
-
-								if tagPfxSet, ok = tagcache[tag]; !ok {
-									tagdef, err := accounts.RetrieveTagDef(ctx, etcdClient, tag)
-									if err != nil {
-										writeStringf(output, "Could not retrieve tag information for '%s': %v\n", tag, err)
-										return
-									}
-									tagPfxSet = tagdef.PathPrefix
-								}
-								for pfx := range tagPfxSet {
-									prefixes[pfx] = struct{}{}
+							stream, ok := dev.Streams[streamname]
+							if ok {
+								delete(stream.Metadata, key)
+								if len(stream.Metadata) == 0 {
+									delete(dev.Streams, streamname)
 								}
 							}
-							writeStringf(output, "%s: %s\n", acc.Username, strings.Join(setToSlice(prefixes), " "))
 						}
 					}
+
+					success, err := manifest.UpsertManifestDeviceAtomically(ctx, etcdClient, dev)
+					if !success {
+						writeStringln(output, txFail)
+						return
+					}
+					writeError(output, err)
 					return
 				},
 			},
