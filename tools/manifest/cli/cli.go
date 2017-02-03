@@ -43,6 +43,8 @@ import (
 	etcd "github.com/coreos/etcd/clientv3"
 )
 
+const devNotExist = "Device does not exist in the manifest"
+
 // ManifestCommand encapsulates a CLI command.
 type ManifestCommand struct {
 	name      string
@@ -223,6 +225,10 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 					if waserr, _ := writeError(output, err); waserr {
 						return
 					}
+					if dev == nil {
+						writeStringln(output, devNotExist)
+						return
+					}
 
 					for _, kv := range tokens[1:] {
 						kvslice := strings.Split(kv, "=")
@@ -234,10 +240,15 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 						val := kvslice[1]
 						if streamname == "" {
 							if dev.Metadata == nil {
-								dev.Metadata = make(map[string]string)
+								writeStringln(output, "device entry is corrupt")
+								return
 							}
 							dev.Metadata[key] = val
 						} else {
+							if dev.Streams == nil {
+								writeStringln(output, "device entry is corrupt")
+								return
+							}
 							stream, ok := dev.Streams[streamname]
 							if ok {
 								if stream.Metadata == nil {
@@ -291,6 +302,10 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 					if waserr, _ := writeError(output, err); waserr {
 						return
 					}
+					if dev == nil {
+						writeStringln(output, devNotExist)
+						return
+					}
 
 					for _, key := range tokens[1:] {
 						if streamname == "" {
@@ -335,6 +350,10 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 					}
 
 					for _, dev := range devs {
+						if dev.Metadata == nil || dev.Streams == nil {
+							writeStringf(output, "%s: [CORRUPT ENTRY]\n", dev.Descriptor)
+							continue
+						}
 						marshalled, err := yaml.Marshal(dev)
 						if err != nil {
 							writeStringln(output, "[CORRUPT ENTRY]")

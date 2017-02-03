@@ -17,14 +17,14 @@ var etcdprefix = ""
 var mp codec.Handle = &codec.MsgpackHandle{}
 
 type ManifestDeviceStream struct {
-	CanonicalName string            `codec:"-"`
-	Metadata      map[string]string `codec:"metadata,omitempty"`
+	CanonicalName string            `codec:"-" yaml:"-"`
+	Metadata      map[string]string `codec:"metadata,omitempty" yaml:"metadata"`
 }
 
 type ManifestDevice struct {
-	Descriptor string                           `codec:"-"`
-	Metadata   map[string]string                `codec:"metadata,omitempty"`
-	Streams    map[string]*ManifestDeviceStream `codec:"streams"`
+	Descriptor string                           `codec:"-" yaml:"-"`
+	Metadata   map[string]string                `codec:"metadata,omitempty" yaml:"metadata"`
+	Streams    map[string]*ManifestDeviceStream `codec:"streams" yaml:"streams"`
 
 	retrievedRevision int64
 }
@@ -46,8 +46,11 @@ func getNameFromEtcdKey(etcdKey string) string {
 }
 
 func RetrieveManifestDevice(ctx context.Context, etcdClient *etcd.Client, descriptor string) (md *ManifestDevice, err error) {
-	md = &ManifestDevice{Descriptor: descriptor}
-	err = etcdstruct.RetrieveEtcdStruct(ctx, etcdClient, getEtcdKey(descriptor), md)
+	md = &ManifestDevice{Descriptor: descriptor, Metadata: make(map[string]string), Streams: make(map[string]*ManifestDeviceStream)}
+	exists, err := etcdstruct.RetrieveEtcdStruct(ctx, etcdClient, getEtcdKey(descriptor), md)
+	if !exists {
+		md = nil
+	}
 	return
 }
 
