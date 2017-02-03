@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	readline "github.com/chzyer/readline"
 	"github.com/immesys/smartgridstore/admincli"
@@ -110,6 +111,9 @@ func (s *sess) GetCmd(args []string) (admincli.CLIModule, string) {
 		}
 		for _, c := range s.CurrentModule().Children() {
 			if args[1] == c.Name() {
+				if c.Runnable() {
+					return nil, fmt.Sprintf("'%s' is a command, not a category", args[1])
+				}
 				s.path = append(s.path, c)
 				s.RePrompt()
 				return nil, ""
@@ -162,17 +166,46 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, user, ip string, r
 	s := &sess{}
 	s.path = []admincli.CLIModule{root}
 	var width uint64 = 80
+	gotwidth := make(chan bool)
 	go func() {
 		for w := range widthch {
+			fmt.Printf("got width %d\n", w)
 			if w == -1 {
 				w = 80
 			}
 			atomic.StoreUint64(&width, uint64(w))
+			close(gotwidth)
 		}
 	}()
+	select {
+	case <-gotwidth:
+	case <-time.After(1 * time.Second):
+	}
 	getWidth := func() int {
 		i := atomic.LoadUint64(&width)
 		return int(i)
+	}
+	logo := []string{
+		"    _____   ______   ______  ",
+		"   / ____| /  ____| /  ____| ",
+		"  | (___   | |  __ | (____   ",
+		"   \\___ \\  | | |_ | \\____ \\  ",
+		"   ____) | | |__| |  ____) | ",
+		"  |_____/  \\______| |_____/  ",
+		"",
+		" Smart Grid Store admin console",
+		" (c) 2017 Michael Andersen, Sam Kumar",
+		" (c) 2017 Regents of the University of California",
+		"----------------------------------------------------",
+		"",
+	}
+	for _, l := range logo {
+		pad := (int(width) - len(l)) / 2
+		pads := ""
+		for i := 0; i < pad; i++ {
+			pads += " "
+		}
+		fmt.Fprintf(link, "%s%s%s\r\n", pads, l, pads)
 	}
 	fIsTerminal := func() bool {
 		return true
@@ -226,6 +259,10 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, user, ip string, r
 			continue
 		}
 		cmd, msg := s.GetCmd(args)
+		if parent.Err() != nil {
+			fmt.Printf("parent context: %v", parent.Err())
+			return
+		}
 		if msg != "" {
 			if !strings.HasSuffix(msg, "\n") {
 				msg += "\n"
