@@ -333,7 +333,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 			&ManifestCommand{
 				name:      "lsdevs",
 				usageargs: "[prefix]",
-				hint:      "Lists metadata for all devices with a given prefix",
+				hint:      "lists metadata for all devices with a given prefix",
 				exec: func(ctx context.Context, output io.Writer, tokens ...string) (argsOK bool) {
 					if argsOK = len(tokens) == 0 || len(tokens) == 1; !argsOK {
 						return
@@ -359,7 +359,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 							writeStringln(output, "[CORRUPT ENTRY]")
 							continue
 						}
-						writeStringf(output, "%s: %s\n", dev.Descriptor, string(marshalled))
+						writeStringf(output, "%s\n%s\n%s\n", dev.Descriptor, strings.Repeat("-", len(dev.Descriptor)), string(marshalled))
 						fmt.Fprintln(os.Stdout, marshalled)
 					}
 					return

@@ -31,6 +31,8 @@ var configfile []byte = nil
 
 const NUM_RHANDLES = 16
 
+const MANIFEST_PREFIX = "manifest/"
+
 var INGESTER_SPACE uuid.UUID = uuid.Parse("c9bbebff-ff40-4dbe-987e-f9e96afb7a57")
 
 var rhPool chan *rados.IOContext
@@ -132,7 +134,7 @@ func main() {
 		}
 	}()
 
-	wch := etcdConn.Watch(ctx, etcdPrefix+"manifest/", etcd.WithPrefix())
+	wch := etcdConn.Watch(ctx, etcdPrefix+MANIFEST_PREFIX, etcd.WithPrefix())
 
 	/* Start over if the configuration file changes */
 	go func() {
@@ -174,14 +176,14 @@ func main() {
 			ytagbase = 10
 		}
 
-		resp, err := etcdConn.Get(ctx, etcdPrefix+"manifest/psl.pqube3.", etcd.WithPrefix())
+		resp, err := etcdConn.Get(ctx, etcdPrefix+MANIFEST_PREFIX+"psl.pqube3.", etcd.WithPrefix())
 		if err != nil {
 			panic(err)
 		}
 		wg := &sync.WaitGroup{}
 		for _, kv := range resp.Kvs {
 			key := string(kv.Key)
-			identifier := key[len(etcdPrefix):]
+			identifier := key[len(etcdPrefix)+len(MANIFEST_PREFIX):]
 			serial := strings.SplitN(identifier, ".", 3)[2]
 			uuids = make([]string, 0, len(upmuparser.STREAMS))
 			for _, canonical := range upmuparser.STREAMS {
