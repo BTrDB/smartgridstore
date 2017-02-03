@@ -225,12 +225,10 @@ func startProcessLoop(ctx context.Context, serial_number string, alias string, u
 	wg.Done()
 }
 
-func insert_stream(ctx context.Context, uu uuid.UUID, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB, feedback chan int) {
+func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB, feedback chan int) {
 	var sampleRate float32 = output.SampleRate()
 	var numPoints int = int((1000.0 / sampleRate) + 0.5)
 	var timeDelta float64 = float64(sampleRate) * 1000000 // convert to nanoseconds
-
-	stream := bc.StreamFromUUID(uu)
 
 	points := make([]btrdb.RawPoint, numPoints)
 	for i := 0; i != len(points); i++ {
@@ -247,7 +245,7 @@ func insert_stream(ctx context.Context, uu uuid.UUID, output *upmuparser.Sync_Ou
 	}
 }
 
-func process(ctx context.Context, sernum string, alias string, uuids []uuid.UUID, bc *btrdb.BTrDB, alive *bool) bool {
+func process(ctx context.Context, sernum string, alias string, streams []*btrdb.Stream, bc *btrdb.BTrDB, alive *bool) bool {
 	rh := <-rhPool
 	defer func() { rhPool <- rh }()
 	oid := fmt.Sprintf("meta.gen.%d", ytagbase)
@@ -334,11 +332,11 @@ func process(ctx context.Context, sernum string, alias string, uuids []uuid.UUID
 			timestamp = time.Date(int(timeArr[0]), time.Month(timeArr[1]), int(timeArr[2]), int(timeArr[3]), int(timeArr[4]), int(timeArr[5]), 0, time.UTC).UnixNano()
 			igs = synco.GetInsertGetters()
 			for j, ig = range igs {
-				if j >= len(uuids) {
-					fmt.Printf("Warning: data for a stream includes stream %s, but no UUID was provided for that stream. Dropping data for that stream...\n", upmuparser.STREAMS[j])
+				if j >= len(streams) {
+					fmt.Printf("Warning: data for a stream includes stream %s, but stream was not provided. Dropping data for that stream...\n", upmuparser.STREAMS[j])
 					continue
 				}
-				go insert_stream(ctx, uuids[j], synco, ig, timestamp, bc, feedback)
+				go insert_stream(ctx, streams[j], synco, ig, timestamp, bc, feedback)
 				numsent++
 			}
 		}
@@ -375,9 +373,28 @@ func process(ctx context.Context, sernum string, alias string, uuids []uuid.UUID
 
 func process_loop(ctx context.Context, keepalive *bool, sernum string, alias string, uuids []uuid.UUID, bc *btrdb.BTrDB) {
 	var i int
+	var streams = []*btrdb.Stream{}
+	for j, uu := range uuids {
+		stream := bc.StreamFromUUID(uu)
+		ex, err := stream.Exists(ctx)
+		if err != nil {
+			fmt.Printf("Could not check if stream exists in BTrDB: %v\n", err)
+			os.Exit(1)
+		}
+		if !ex {
+			stream, err = bc.Create(ctx, uu, fmt.Sprintf("psl.pqube3.%s", sernum), map[string]string{"name": upmuparser.STREAMS[j]}, nil)
+			if err != nil {
+				fmt.Printf("Could not create stream in BTrDB: %v\n", err)
+				fmt.Println("This could mean that a stream exists in this collection and tags, but with a different UUID.")
+				fmt.Println("I don't know how to deal with this and will now exit. Bye!")
+				os.Exit(1)
+			}
+		}
+		streams = append(streams, stream)
+	}
 	for *keepalive {
 		fmt.Printf("looping %v\n", alias)
-		if process(ctx, sernum, alias, uuids, bc, keepalive) {
+		if process(ctx, sernum, alias, streams, bc, keepalive) {
 			fmt.Printf("sleeping %v\n", alias)
 			time.Sleep(time.Second)
 		} else {
