@@ -46,10 +46,17 @@ func getNameFromEtcdKey(etcdKey string) string {
 }
 
 func RetrieveManifestDevice(ctx context.Context, etcdClient *etcd.Client, descriptor string) (md *ManifestDevice, err error) {
-	md = &ManifestDevice{Descriptor: descriptor, Metadata: make(map[string]string), Streams: make(map[string]*ManifestDeviceStream)}
+	md = &ManifestDevice{Descriptor: descriptor}
 	exists, err := etcdstruct.RetrieveEtcdStruct(ctx, etcdClient, getEtcdKey(descriptor), md)
 	if !exists {
 		md = nil
+	} else {
+		if md.Metadata == nil {
+			md.Metadata = make(map[string]string)
+		}
+		if md.Streams == nil {
+			md.Streams = make(map[string]*ManifestDeviceStream)
+		}
 	}
 	return
 }
