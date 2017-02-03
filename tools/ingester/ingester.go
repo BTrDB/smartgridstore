@@ -273,13 +273,28 @@ func process(ctx context.Context, sernum string, alias string, uuids []uuid.UUID
 	var igs []upmuparser.InsertGetter
 	var ig upmuparser.InsertGetter
 
-	for objname, rawdata := range todo {
+	for objname, _ := range todo {
 		parts := strings.SplitN(objname, ".", 3)
 		if len(parts) != 3 {
 			fmt.Printf("Invalid object name %s\n", parts)
 			continue
 		}
 		filename := parts[2]
+
+		stat, err := rh.Stat(objname)
+		if err != nil {
+			fmt.Printf("Could not stat object: %v\n", err)
+			fmt.Println("Skipping...")
+			continue
+		}
+		rawdata := make([]byte, stat.Size, stat.Size)
+
+		read, err := rh.Read(objname, rawdata, 0)
+		if read != int(stat.Size) || err != nil {
+			fmt.Printf("Could not read object: read %d out of %v bytes, err = %v\n", read, stat.Size, err)
+			fmt.Println("Skipping...")
+			continue
+		}
 
 		success = true
 		parsed, err = upmuparser.ParseSyncOutArray(rawdata)
