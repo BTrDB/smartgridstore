@@ -56,6 +56,8 @@ var processing insertstats
 var queueing insertstats
 var response insertstats
 
+var verbose bool
+
 func resetStats(stats *insertstats) {
 	atomic.StoreUint64(&stats.minlatency, math.MaxUint64)
 	atomic.StoreUint64(&stats.maxlatency, 0)
@@ -73,7 +75,8 @@ func printStatsAndReset(stats *insertstats, prefix string) {
 	avg := atomic.LoadUint64(&stats.totallatency) / cnt
 	min := atomic.LoadUint64(&stats.minlatency)
 	max := atomic.LoadUint64(&stats.maxlatency)
-	log.Printf("%s: Min = %v, Mean = %v, Max = %v, NumRecords = %v", prefix, time.Duration(min), time.Duration(avg), time.Duration(max), cnt)
+	resetStats(stats)
+	log.Printf("%s: Min = %v, Mean = %v, Max = %v, Count = %v", prefix, time.Duration(min), time.Duration(avg), time.Duration(max), cnt)
 }
 
 func updateStats(stats *insertstats, latency uint64) {
@@ -249,7 +252,9 @@ func handlePMUConn(conn *net.TCPConn) {
 					}
 					// if we've reached this point, we have all the data
 					recvdfull = true
-					//fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
+					if verbose {
+						fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
+					}
 
 					go func() {
 						queuestart := time.Now()
@@ -287,11 +292,15 @@ func handlePMUConn(conn *net.TCPConn) {
 }
 
 func main() {
-	if len(os.Args) == 2 && os.Args[1] == "-version" {
+	if len(os.Args) > 1 && os.Args[1] == "-version" {
 		fmt.Printf("%d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
 		os.Exit(0)
 	}
 	fmt.Printf("Booting pmu2btrdb version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+	if len(os.Args) > 1 && os.Args[1] == "-verbose" {
+		verbose = true
+		fmt.Printf("Verbose mode is turned on")
+	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
