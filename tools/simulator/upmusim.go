@@ -108,6 +108,7 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, lock *sync.Mute
 
 		if tosleep < 20*time.Second {
 			fmt.Printf("Sleeping for less than 20 seconds (sleeping for %v ns); falling behind?\n", tosleep)
+			tosleep = 20 * time.Second
 		}
 
 		//Wait INTERVAL before doing next file
