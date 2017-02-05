@@ -33,10 +33,11 @@ const (
 	MAXDATALEN            = 75744000
 	MAXCONCURRENTSESSIONS = 16
 	TIMEOUTSECS           = 30
-	MAXCONCURRENTINSERTS  = 1024
 )
 
-var insertionSemaphore = make(chan struct{}, MAXCONCURRENTINSERTS)
+var MaxConcurrentInserts int64 = 1024
+
+var insertionSemaphore chan struct{}
 
 func roundUp4(x uint32) uint32 {
 	return (x + 3) & 0xFFFFFFFC
@@ -240,6 +241,16 @@ func main() {
 	}
 
 	var err error
+
+	mci := os.Getenv("PMU2BTRDB_MAX_OUTSTANDING")
+	if mci == "" {
+		log.Printf("PMU2BTRDB_MAX_OUTSTANDING is not set; using %d", MaxConcurrentInserts)
+	} else {
+		MaxConcurrentInserts, err = strconv.ParseInt(prt, 10, 64)
+		if err != nil {
+			log.Fatalf("Could not parse PMU2BTRDB_MAX_OUTSTANDING: %v", err)
+		}
+	}
 
 	bc, err = btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
