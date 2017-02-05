@@ -19,7 +19,7 @@ func roundUp4(x uint32) uint32 {
 }
 
 //simulate a PMU waiting interval seconds between files
-func simulatePmu(conn net.Conn, serialint int64, interval int64, wg *sync.WaitGroup) {
+func simulatePmu(conn net.Conn, serialint int64, interval int64, lock *sync.Mutex, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var sendid uint32 = 0
@@ -65,12 +65,16 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, wg *sync.WaitGr
 		copy(header_buf[16:16+lenpfp], filepath)
 		copy(header_buf[16+lenpfp:], serial)
 
+		lock.Lock()
+
 		n, err := conn.Write(header_buf)
 		if n != len(header_buf) || err != nil {
+			lock.Unlock()
 			panic("TCP write failed on header")
 		}
 		n, err = conn.Write(blob)
 		if n != len(blob) || err != nil {
+			lock.Unlock()
 			panic("TCP write failed on file")
 		}
 
@@ -80,6 +84,7 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, wg *sync.WaitGr
 		for totalread < 4 {
 			n, err = conn.Read(resp_buf[totalread:])
 			if err != nil {
+				lock.Unlock()
 				panic("Could not get confirmation of receipt")
 			}
 			totalread += n
@@ -89,6 +94,8 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, wg *sync.WaitGr
 		if resp != sendid {
 			fmt.Printf("Received improper confirmation of receipt: got %v, expected %v\n", resp, sendid)
 		}
+
+		lock.Unlock()
 
 		sendid++
 

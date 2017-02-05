@@ -87,6 +87,8 @@ func main() {
 			//Add jitter to simulation
 			time.Sleep(time.Duration(float64(i_interval)*rand.Float64()*1000.0) * time.Millisecond)
 			for {
+				lock := &sync.Mutex{}
+
 				fmt.Printf("Connecting to server %s\n", target)
 				conn, err := net.Dial("tcp", target)
 				if err != nil {
@@ -100,34 +102,13 @@ func main() {
 				for j := int64(0); j < i_num_pmus_per; j++ {
 					serial := int64(3500000) + ((index * i_num_pmus_per) + j) + i_offset
 					wg.Add(1)
-					go simulatePmu(conn, serial, i_interval, wg)
+					go simulatePmu(conn, serial, i_interval, lock, wg)
 				}
 
 				wg.Wait()
-				//Add jitter to simulation
-				time.Sleep(time.Duration(float64(i_interval)*rand.Float64()*1000.0) * time.Millisecond)
-				for {
-					fmt.Printf("Connecting to server %s\n", target)
-					conn, err := net.Dial("tcp", target)
-					if err != nil {
-						fmt.Printf("Could not connect to receiver: %v\n", err)
-						time.Sleep(time.Duration(i_interval) * time.Second)
-						continue
-					}
 
-					wg := &sync.WaitGroup{}
-
-					for j := int64(0); j < i_num_pmus_per; j++ {
-						serial := int64(3500000) + ((index * i_num_pmus_per) + j) + i_offset
-						wg.Add(1)
-						go simulatePmu(conn, serial, i_interval, wg)
-					}
-
-					wg.Wait()
-
-					fmt.Printf("Connection to %s was dropped!\n", target)
-					fmt.Println("Restarting...")
-				}
+				fmt.Printf("Connection to %s was dropped!\n", target)
+				fmt.Println("Restarting...")
 			}
 		}(i)
 	}
