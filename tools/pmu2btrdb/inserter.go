@@ -22,7 +22,7 @@ var bc *btrdb.BTrDB
 var ec *etcd.Client
 
 func descriptorFromSerial(serial string) string {
-	return fmt.Sprintf("psl.pqube3.%s", serial)
+	return strings.ToLower(fmt.Sprintf("psl.pqube3.%s", serial))
 }
 
 func getUUID(serial string, streamname string) uuid.UUID {
