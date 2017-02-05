@@ -190,9 +190,9 @@ func generateSecond(startTime int64) upmuparser.Upmu_one_second_output_standard 
 		data.Data.L2_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Sin(float64(i) * 2.0 * math.Pi / 120))
 		data.Data.L3_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Sin(float64(i) * 1.0 * math.Pi / 120))
 
-		data.Data.C1_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Y0(float64((i+1)%120) * 15.0 / 120))
-		data.Data.C2_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Y1(float64((i+1)%120) * 15.0 / 120))
-		data.Data.C3_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Yn(2, float64((i+1)%120)*15.0/120))
+		data.Data.C1_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Y0(float64(i+1) * 15.0 / 120))
+		data.Data.C2_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Y1(float64(i+1) * 15.0 / 120))
+		data.Data.C3_e_vector_space[i].Fundamental_magnitude_volts = clampFloat32(math.Yn(2, float64(i+1)*15.0/120))
 
 		data.Data.L1_e_vector_space[i].Phase_in_degrees = rand.Float32()
 		data.Data.L2_e_vector_space[i].Phase_in_degrees = clampFloat32(rand.NormFloat64())
