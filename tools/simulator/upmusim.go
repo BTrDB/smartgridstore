@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/SoftwareDefinedBuildings/sync2_quasar/upmuparser"
+	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
 )
 
 func roundUp4(x uint32) uint32 {
