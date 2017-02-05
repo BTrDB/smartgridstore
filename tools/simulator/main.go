@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"net"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -34,11 +36,17 @@ func main() {
 		offset = "1"
 	}
 
+	num_tcps := os.Getenv("SIMULATOR_TCP_CONNECTIONS")
+	if num_tcps == "" {
+		fmt.Println("Missing $NUM_TCP_CONNECTIONS, assuming 1")
+		num_tcps = "1"
+	}
+
 	//How many PMUs to simulate
-	num_pmus := os.Getenv("SIMULATOR_NUMBER")
-	if num_pmus == "" {
-		fmt.Println("Missing $SIMULATOR_NUMBER, assuming 1")
-		num_pmus = "1"
+	num_pmus_per := os.Getenv("SIMULATOR_NUM_PER_TCP")
+	if num_pmus_per == "" {
+		fmt.Println("Missing $SIMULATOR_NUM_PER_TCP, assuming 1")
+		num_pmus_per = "1"
 	}
 
 	//How long to wait between sending files. The files are always 2 minutes
@@ -49,9 +57,15 @@ func main() {
 		interval = "120"
 	}
 
-	i_num_pmus, err := strconv.ParseInt(num_pmus, 10, 64)
+	i_num_tcps, err := strconv.ParseInt(num_tcps, 10, 64)
 	if err != nil {
-		fmt.Println("Could not parse SIMULATOR_NUMBER")
+		fmt.Println("Could not parse SIMULATOR_NUM_TCPS")
+		os.Exit(2)
+	}
+
+	i_num_pmus_per, err := strconv.ParseInt(num_pmus_per, 10, 64)
+	if err != nil {
+		fmt.Println("Could not parse SIMULATOR_NUM_PER_TCP")
 		os.Exit(2)
 	}
 
@@ -67,8 +81,25 @@ func main() {
 		os.Exit(2)
 	}
 
-	for i := int64(0); i < i_num_pmus; i++ {
-		go simulatePmu(target, 3500000+i+i_offset, i_interval)
+	for i := int64(0); i < i_num_tcps; i++ {
+		go func() {
+			//Add jitter to simulation
+			time.Sleep(time.Duration(float64(i_interval)*rand.Float64()*1000.0) * time.Millisecond)
+			for {
+				fmt.Printf("Connecting to server %s\n", target)
+				conn, err := net.Dial("tcp", target)
+				if err != nil {
+					fmt.Printf("Could not connect to receiver: %v\n", err)
+					time.Sleep(time.Duration(i_interval) * time.Second)
+					continue
+				}
+
+				for j := int64(0); j < i_num_pmus_per; j++ {
+					serial := int64(3500000) + ((i * i_num_pmus_per) + j) + i_offset
+					go simulatePmu(conn, serial, i_interval)
+				}
+			}
+		}()
 	}
 
 	for {
