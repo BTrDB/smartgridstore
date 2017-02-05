@@ -70,7 +70,7 @@ func printStatsAndReset(stats *insertstats, prefix string) {
 		log.Printf("%s: No records processed", prefix)
 		return
 	}
-	avg := float64(atomic.LoadUint64(&stats.totallatency)) / float64(cnt)
+	avg := atomic.LoadUint64(&stats.totallatency) / cnt
 	min := atomic.LoadUint64(&stats.minlatency)
 	max := atomic.LoadUint64(&stats.maxlatency)
 	log.Printf("%s: Min = %v, Mean = %v, Max = %v, NumRecords = %v", prefix, time.Duration(min), time.Duration(avg), time.Duration(max), cnt)
