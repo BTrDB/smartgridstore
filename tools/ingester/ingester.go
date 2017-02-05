@@ -389,9 +389,11 @@ func process_loop(ctx context.Context, keepalive *bool, sernum string, alias str
 			if !ok {
 				panic(fmt.Errorf("path metadata is missing for device %s (needed for demo hack)", dev.Descriptor))
 			}
-			stream, err = bc.Create(ctx, uu /*fmt.Sprintf("psl.pqube3.%s", strings.ToLower(sernum))*/, path, map[string]string{"name": upmuparser.STREAMS[j]}, nil)
+			tags := map[string]string{"name": upmuparser.STREAMS[j]}
+			stream, err = bc.Create(ctx, uu /*fmt.Sprintf("psl.pqube3.%s", strings.ToLower(sernum))*/, path, tags, nil)
 			if err != nil {
 				fmt.Printf("Could not create stream in BTrDB: %v\n", err)
+				fmt.Printf("Details: uuid=%s, collection=%s, tags=%v\n", uu.String(), path, tags)
 				fmt.Printf("The name was %q\n", upmuparser.STREAMS[j])
 				fmt.Println("This could mean that a stream exists in this collection and tags, but with a different UUID.")
 				fmt.Println("I don't know how to deal with this and will now exit. Bye!")
