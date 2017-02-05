@@ -16,7 +16,7 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 2
+const VersionMinor = 1
 const VersionPatch = 0
 
 var logger *logging.Logger
@@ -222,10 +222,7 @@ func handlePMUConn(conn *net.TCPConn) {
 				}
 				if snindex == lenpsn {
 					newsernum = string(snbuffer[:lensn])
-					if sernum != "" && newsernum != sernum {
-						fmt.Printf("WARNING: serial number changed from %s to %s\n", sernum, newsernum)
-						fmt.Println("Updating serial number for next write")
-					}
+					// we used to warn if the serial number changed from previous received frame
 					sernum = newsernum
 				}
 			}
