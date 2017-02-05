@@ -82,7 +82,16 @@ func main() {
 	}
 
 	for i := int64(0); i < i_num_tcps; i++ {
-		go func() {
+		var simulatePMUs func(int64)
+		simulatePMUs = func(index int64) {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("Connection to %s was dropped!\n", target)
+					fmt.Println("Restarting...")
+					go simulatePMUs(index)
+				}
+			}()
+
 			//Add jitter to simulation
 			time.Sleep(time.Duration(float64(i_interval)*rand.Float64()*1000.0) * time.Millisecond)
 			for {
@@ -95,11 +104,12 @@ func main() {
 				}
 
 				for j := int64(0); j < i_num_pmus_per; j++ {
-					serial := int64(3500000) + ((i * i_num_pmus_per) + j) + i_offset
+					serial := int64(3500000) + ((index * i_num_pmus_per) + j) + i_offset
 					go simulatePmu(conn, serial, i_interval)
 				}
 			}
-		}()
+		}
+		go simulatePMUs(i)
 	}
 
 	for {
