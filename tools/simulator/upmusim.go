@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
+	"github.com/immesys/smartgridstore/tools/upmuparser"
 )
 
 func roundUp4(x uint32) uint32 {

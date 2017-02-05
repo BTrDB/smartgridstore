@@ -58,6 +58,14 @@ func main() {
 		interval = "120"
 	}
 
+	//The total time over which TCP connections are made. This is to avoid
+	//all of the connections from being made at once
+	startup := os.Getenv("SIMULATOR_STARTUP")
+	if startup == "" {
+		fmt.Printf("Missing $SIMULATOR_STARTUP, assuming %s (same as $SIMULATOR_INTERVAL)\n", interval)
+		startup = interval
+	}
+
 	i_num_tcps, err := strconv.ParseInt(num_tcps, 10, 64)
 	if err != nil {
 		fmt.Println("Could not parse SIMULATOR_NUM_TCPS")
@@ -82,10 +90,16 @@ func main() {
 		os.Exit(2)
 	}
 
+	i_startup, err := strconv.ParseInt(startup, 10, 64)
+	if err != nil {
+		fmt.Println("Could not parse SIMULATOR_STARTUP")
+		os.Exit(2)
+	}
+
 	for i := int64(0); i < i_num_tcps; i++ {
 		go func(index int64) {
 			//Add jitter to simulation
-			time.Sleep(time.Duration(float64(i_interval)*rand.Float64()*1000.0) * time.Millisecond)
+			time.Sleep(time.Duration(float64(i_startup)*rand.Float64()*1000.0) * time.Millisecond)
 			for {
 				lock := &sync.Mutex{}
 
