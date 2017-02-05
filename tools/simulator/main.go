@@ -8,30 +8,14 @@ import (
 	"time"
 )
 
-const VersionMajor = 4
-const VersionMinor = 0
-const VersionPatch = 0
-
 var sent int64
 
 func main() {
-	if len(os.Args) == 2 && os.Args[1] == "-version" {
-		fmt.Printf("%d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
-		os.Exit(0)
-	}
-	fmt.Printf("Booting simulator version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
 	//The receiver to send to (IP:PORT)
 	target := os.Getenv("SIMULATOR_TARGET")
 	if target == "" {
 		fmt.Println("Missing $SIMULATOR_TARGET")
 		os.Exit(1)
-	}
-
-	//The offset in serial numbers to use for this simulator
-	offset := os.Getenv("SIMULATOR_SERIAL_OFFSET")
-	if offset == "" {
-		fmt.Println("Missing $SIMULATOR_SERIAL_OFFSET, assuming 0")
-		offset = "1"
 	}
 
 	//How many PMUs to simulate
@@ -55,12 +39,6 @@ func main() {
 		os.Exit(2)
 	}
 
-	i_offset, err := strconv.ParseInt(offset, 10, 64)
-	if err != nil {
-		fmt.Println("Could not parse SIMULATOR_SERIAL_OFFSET")
-		os.Exit(2)
-	}
-
 	i_interval, err := strconv.ParseInt(interval, 10, 64)
 	if err != nil {
 		fmt.Println("Could not parse SIMULATOR_INTERVAL")
@@ -68,7 +46,7 @@ func main() {
 	}
 
 	for i := int64(0); i < i_num_pmus; i++ {
-		go simulatePmu(target, 3500000+i+i_offset, i_interval)
+		go simulatePmu(target, 3500000+i, i_interval)
 	}
 
 	for {

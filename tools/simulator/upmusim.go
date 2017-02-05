@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
+	"github.com/SoftwareDefinedBuildings/sync2_quasar/upmuparser"
 )
 
 func roundUp4(x uint32) uint32 {
@@ -154,8 +154,8 @@ func xinvsinxinv(x float64) float64 {
 }
 
 const WEIERSTRASS_A float64 = 0.5
-const WEIERSTRASS_B float64 = 16.0
-const WEIERSTRASS_ITER int = 100
+const WEIERSTRASS_B float64 = 15.0
+const WEIERSTRASS_ITER int = 20
 
 // This approximates a function that is continuous, but not differentiable anywhere.
 func weierstrass(x float64) float64 {
