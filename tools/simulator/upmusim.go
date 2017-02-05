@@ -154,8 +154,11 @@ func xinvsinxinv(x float64) float64 {
 }
 
 const WEIERSTRASS_A float64 = 0.5
-const WEIERSTRASS_B float64 = 15.0
-const WEIERSTRASS_ITER int = 20
+const WEIERSTRASS_B float64 = 13.0
+const WEIERSTRASS_ITER int = 13
+
+// Increasing the iteration count to 15 or above results in problems with
+// math.Cos. I kept it at 13 to avoid getting too close.
 
 // This approximates a function that is continuous, but not differentiable anywhere.
 func weierstrass(x float64) float64 {
