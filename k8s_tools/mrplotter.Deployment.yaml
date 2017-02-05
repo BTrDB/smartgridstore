@@ -12,6 +12,13 @@ spec:
       containers:
       - name: mrplotter
         image: btrdb/mrplotter:latest
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "1000m"
+          limits:
+            memory: "512Mi"
+            cpu: "2000m"
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379

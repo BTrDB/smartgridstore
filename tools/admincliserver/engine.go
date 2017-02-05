@@ -97,6 +97,9 @@ func (s *sess) List() string {
 	return strings.TrimSuffix(rv, "\n")
 }
 func (s *sess) GetCmd(args []string) (admincli.CLIModule, string) {
+	if strings.HasPrefix(strings.TrimSpace(args[0]), "#") {
+		return nil, ""
+	}
 	switch args[0] {
 	case "..":
 		s.UpDir()
@@ -260,8 +263,10 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, user, ip string, r
 		}
 		cmd, msg := s.GetCmd(args)
 		if parent.Err() != nil {
-			fmt.Printf("parent context: %v", parent.Err())
+			fmt.Printf("parent context: %v\n", parent.Err())
 			return
+		} else {
+			fmt.Printf("parent error is %v\n", parent.Err())
 		}
 		if msg != "" {
 			if !strings.HasSuffix(msg, "\n") {

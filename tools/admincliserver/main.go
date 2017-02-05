@@ -18,7 +18,7 @@ import (
 
 const VersionMajor = 4
 const VersionMinor = 1
-const VersionPatch = 4
+const VersionPatch = 6
 
 var etcdClient *etcd.Client
 

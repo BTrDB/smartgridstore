@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 1
+const VersionMinor = 2
 const VersionPatch = 0
 
 var logger *logging.Logger
@@ -68,9 +69,14 @@ func processMessage(sendid []byte, ip string, sernum string, filepath string, da
 	rh := <-rhPool
 	defer func() { rhPool <- rh }()
 
-	objname := fmt.Sprintf("data.psl.pqube3.%s.%s", sernum, filepath)
+	objname := fmt.Sprintf("data.psl.pqube3.%s.%s", strings.ToLower(sernum), filepath)
 
-	err := rh.SetOmap("meta.master", map[string][]byte{objname: []byte(objname)})
+	err := rh.WriteFull(objname, data)
+	if err != nil {
+		logger.Panicf("Could not write to ceph: %v", err)
+	}
+
+	err = rh.SetOmap("meta.master", map[string][]byte{objname: []byte(objname)})
 	if err != nil {
 		logger.Panicf("Could not write master entry: %v", err)
 	}
@@ -80,16 +86,11 @@ func processMessage(sendid []byte, ip string, sernum string, filepath string, da
 		logger.Panicf("Could not write gen %d entry: %v", Generation, err)
 	}
 
-	lastheardrec := fmt.Sprintf("%d,%d", time.Now().UnixNano(), ip)
-	err = rh.SetOmap("meta.lastheard", map[string][]byte{sernum: []byte(lastheardrec)})
-	if err != nil {
-		logger.Panicf("Could not write last heard entry:%v", err)
-	}
-
-	err = rh.WriteFull(objname, data)
-	if err != nil {
-		logger.Panicf("Could not write to ceph: %v", err)
-	}
+	// lastheardrec := fmt.Sprintf("%d,%s", time.Now().UnixNano(), ip)
+	// err = rh.SetOmap("meta.lastheard", map[string][]byte{sernum: []byte(lastheardrec)})
+	// if err != nil {
+	// 	logger.Panicf("Could not write last heard entry:%v", err)
+	// }
 
 	// Database was successfully updated
 	return sendid

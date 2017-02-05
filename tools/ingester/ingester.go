@@ -381,9 +381,10 @@ func process_loop(ctx context.Context, keepalive *bool, sernum string, alias str
 			os.Exit(1)
 		}
 		if !ex {
-			stream, err = bc.Create(ctx, uu, fmt.Sprintf("psl.pqube3.%s", sernum), map[string]string{"name": upmuparser.STREAMS[j]}, nil)
+			stream, err = bc.Create(ctx, uu, fmt.Sprintf("psl.pqube3.%s", strings.ToLower(sernum)), map[string]string{"name": upmuparser.STREAMS[j]}, nil)
 			if err != nil {
 				fmt.Printf("Could not create stream in BTrDB: %v\n", err)
+				fmt.Printf("The name was %q\n", upmuparser.STREAMS[j])
 				fmt.Println("This could mean that a stream exists in this collection and tags, but with a different UUID.")
 				fmt.Println("I don't know how to deal with this and will now exit. Bye!")
 				os.Exit(1)

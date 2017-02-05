@@ -30,6 +30,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/

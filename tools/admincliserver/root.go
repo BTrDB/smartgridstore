@@ -8,6 +8,7 @@ import (
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/acl"
 	"github.com/immesys/smartgridstore/admincli"
+	mfst "github.com/immesys/smartgridstore/tools/manifest/cli"
 	mrplotterconf "github.com/samkumar/mr-plotter-conf/cli"
 )
 
@@ -21,10 +22,12 @@ func GetRootModule(c *etcd.Client, user string) admincli.CLIModule {
 
 	mrp := mrplotterconf.NewMrPlotterCLIModule(c)
 	acl := acl.NewACLModule(c, user)
+	manifest := mfst.NewManifestCLIModule(c)
 	r := &admincli.GenericCLIModule{
 		MChildren: []admincli.CLIModule{
 			mrp,
 			acl,
+			manifest,
 		},
 	}
 	return r

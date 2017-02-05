@@ -12,6 +12,13 @@ spec:
       containers:
       - name: receiver
         image: btrdb/receiver:latest
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "1000m"
+          limits:
+            memory: "1024Mi"
+            cpu: "2000m"
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379

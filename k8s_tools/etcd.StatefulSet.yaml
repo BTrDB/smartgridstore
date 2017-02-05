@@ -34,6 +34,13 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: etcd
+        resources:
+          requests:
+            memory: "1000Mi"
+            cpu: "250m"
+          limits:
+            memory: "1500Mi"
+            cpu: "500m"
         env:
         - name: ETCD_LISTEN_PEER_URLS
           value: http://0.0.0.0:2380
