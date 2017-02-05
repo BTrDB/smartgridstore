@@ -199,7 +199,7 @@ func generateSecond(startTime int64) upmuparser.Upmu_one_second_output_standard 
 		data.Data.L3_e_vector_space[i].Phase_in_degrees = clampFloat32(rand.ExpFloat64())
 
 		data.Data.C1_e_vector_space[i].Phase_in_degrees = clampFloat32(x2sinxinv(float64(i-60) / 240))
-		data.Data.C2_e_vector_space[i].Phase_in_degrees = clampFloat32(xinvsinxinv(float64(i-60) / 120))
+		data.Data.C2_e_vector_space[i].Phase_in_degrees = clampFloat32(0.25 * xinvsinxinv(float64(i-60)/120))
 		data.Data.C3_e_vector_space[i].Phase_in_degrees = clampFloat32(weierstrass(float64(i-60) / 60))
 
 		data.Data.Status[i] = int32(1)
