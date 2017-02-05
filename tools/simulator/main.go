@@ -12,7 +12,7 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 1
+const VersionMinor = 2
 const VersionPatch = 0
 
 var sent int64

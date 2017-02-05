@@ -36,7 +36,6 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, lock *sync.Mute
 	fmt.Printf("Starting virtual PMU %s\n", serial)
 
 	for {
-		filestarttime := time.Now()
 		//Inner loop, for each file
 		startTime += 120 * 1000 * 1000 * 1000
 		var blob []byte = generateFile(startTime / 1000000000)
@@ -103,8 +102,8 @@ func simulatePmu(conn net.Conn, serialint int64, interval int64, lock *sync.Mute
 		//Increment our stats
 		atomic.AddInt64(&sent, 1)
 
-		elapsed := time.Since(filestarttime)
-		tosleep := (time.Duration(interval) * time.Second) - elapsed
+		nxt := startTime + 120*1000*1000*1000
+		tosleep := time.Unix(0, nxt).Sub(time.Now())
 
 		if tosleep < 20*time.Second {
 			fmt.Printf("Sleeping for less than 20 seconds (sleeping for %v ns); falling behind?\n", tosleep)

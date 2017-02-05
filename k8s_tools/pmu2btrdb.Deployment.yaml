@@ -17,12 +17,12 @@ spec:
             value: http://etcd:2379
           - name: RECEIVER_PORT
             value: "1884"
-          - name: BTRDB_ENPOINTS
+          - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410
         ports:
         - containerPort: 1884
           protocol: TCP
-          name: pmu2btrdb-legacy
+          name: pmu2btrdb-lgcy
 ---
 apiVersion: v1
 kind: Service
@@ -33,8 +33,8 @@ metadata:
 spec:
   ports:
   - port: 1884
-    targetPort: pmu2btrdb-legacy
-    name: pmu2btrdb-legacy
+    targetPort: pmu2btrdb-lgcy
+    name: pmu2btrdb-lgcy
   externalIPs:
     #here you should choose some IP addresses in your cluster that you
     #would like receiver to be available on. Ensure that port 1883
