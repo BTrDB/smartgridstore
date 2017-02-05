@@ -73,7 +73,7 @@ func printStatsAndReset(stats *insertstats, prefix string) {
 	avg := float64(atomic.LoadUint64(&stats.totallatency)) / float64(cnt)
 	min := atomic.LoadUint64(&stats.minlatency)
 	max := atomic.LoadUint64(&stats.maxlatency)
-	log.Printf("%s: Min = %v, Mean = %v, Max = %v, NumRecords = %v", prefix, min, avg, max, cnt)
+	log.Printf("%s: Min = %v, Mean = %v, Max = %v, NumRecords = %v", prefix, time.Duration(min), time.Duration(avg), time.Duration(max), cnt)
 }
 
 func updateStats(stats *insertstats, latency uint64) {
