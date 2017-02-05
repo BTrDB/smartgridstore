@@ -252,6 +252,8 @@ func main() {
 		}
 	}
 
+	insertionSemaphore = make(chan struct{}, MaxConcurrentInserts)
+
 	bc, err = btrdb.Connect(context.TODO(), btrdb.EndpointsFromEnv()...)
 	if err != nil {
 		log.Fatalf("Could not connect to BTrDB: %v", err)

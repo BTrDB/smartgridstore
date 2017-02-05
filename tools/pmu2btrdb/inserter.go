@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
@@ -52,6 +53,8 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 		}
 	}
 
+	var dev *manifest.ManifestDevice
+
 	// Now let's go ahead and insert the data
 	for sid, dataset := range toinsert {
 		// Some uPMUs don't have all streams
@@ -68,16 +71,27 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 		if !ex {
 			// We need to actually create the stream. First, we query the path from etcd
 			desc := descriptorFromSerial(sernum)
-			dev, err := manifest.RetrieveManifestDevice(ctx, ec, desc)
-			if err != nil {
-				log.Fatalf("Could not check for device path in etcd: %v", err)
+
+			if dev == nil {
+				dev, err = manifest.RetrieveManifestDevice(ctx, ec, desc)
+				if err != nil {
+					log.Fatalf("Could not check for device path in etcd: %v", err)
+				}
 			}
-			path, ok := dev.Metadata["path"]
-			if !ok {
-				log.Printf("Device %v is missing the path metadata; falling back to descriptor", desc)
+
+			var path string
+			if dev != nil {
+				var ok bool
+				path, ok = dev.Metadata["path"]
+				if !ok {
+					log.Printf("Device %v is missing the path metadata; falling back to descriptor", desc)
+					path = desc
+				}
+			} else {
+				log.Printf("No manifest device info for %v was found; falling back to descriptor", desc)
 				path = desc
 			}
-			s, err = bc.Create(ctx, uu, path, map[string]string{"name": upmuparser.STREAMS[sid]}, []byte{})
+			s, err = bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, []byte{})
 			if err != nil {
 				log.Fatalf("Could not create stream in BTrDB: %v", err)
 			}
