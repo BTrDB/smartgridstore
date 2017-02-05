@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -263,6 +264,9 @@ func main() {
 		os.Exit(0)
 	}
 	fmt.Printf("Booting receiver version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	//Load variables
 	prt := os.Getenv("RECEIVER_PORT")
 	if prt == "" {

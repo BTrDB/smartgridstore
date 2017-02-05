@@ -7,13 +7,13 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	btrdb "gopkg.in/btrdb.v4"
 
-	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
 )
 
@@ -21,24 +21,9 @@ const VersionMajor = 4
 const VersionMinor = 0
 const VersionPatch = 0
 
-const ReLookupInterval = 30 * time.Minute
-
-type cacheEntry struct {
-	alias string
-	found bool
-	time  time.Time
-}
-
-var aliasCacheMu sync.Mutex
-var aliasCache map[string]cacheEntry
-
 var FAILUREMSG = make([]byte, 4, 4)
 
-var rhPool chan *rados.IOContext
-
 var Port = 1883
-
-var Generation = 1
 
 const (
 	CONNBUFLEN            = 1024 // number of bytes we read from the connection at a time
@@ -48,8 +33,10 @@ const (
 	MAXDATALEN            = 75744000
 	MAXCONCURRENTSESSIONS = 16
 	TIMEOUTSECS           = 30
-	NUM_RHANDLES          = 16
+	MAXCONCURRENTINSERTS  = 1024
 )
+
+var insertionSemaphore = make(chan struct{}, MAXCONCURRENTINSERTS)
 
 func roundUp4(x uint32) uint32 {
 	return (x + 3) & 0xFFFFFFFC
@@ -114,6 +101,9 @@ func handlePMUConn(conn *net.TCPConn) {
 
 	/* The response to send to the uPMU. */
 	var recvdfull bool
+
+	/* To protect writing responses back to the client uPMUs. */
+	outlock := &sync.Mutex{}
 
 	// Infinite loop to keep reading messages until connection is closed
 	for {
@@ -198,17 +188,26 @@ func handlePMUConn(conn *net.TCPConn) {
 					// if we've reached this point, we have all the data
 					recvdfull = true
 					fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
-					success := processMessage(context.TODO(), sernum, dtbuffer[:lendt])
 
-					resp := sendid
-					if !success {
-						resp = make([]byte, 4)
-					}
-					_, erw = conn.Write(resp)
-					if erw != nil {
-						fmt.Printf("Connection lost: %v (write failed: %v)\n", conn.RemoteAddr().String(), erw)
-						return
-					}
+					go func() {
+						insertionSemaphore <- struct{}{}
+						defer func() {
+							<-insertionSemaphore
+						}()
+
+						success := processMessage(context.TODO(), sernum, dtbuffer[:lendt])
+
+						resp := sendid
+						if !success {
+							resp = FAILUREMSG
+						}
+						outlock.Lock()
+						_, erw = conn.Write(resp)
+						outlock.Unlock()
+						if erw != nil {
+							fmt.Printf("Connection lost: %v (write failed: %v)\n", conn.RemoteAddr().String(), erw)
+						}
+					}()
 				}
 			}
 			if err != nil {
@@ -225,6 +224,9 @@ func main() {
 		os.Exit(0)
 	}
 	fmt.Printf("Booting pmu2btrdb version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	//Load variables
 	prt := os.Getenv("RECEIVER_PORT")
 	if prt == "" {
