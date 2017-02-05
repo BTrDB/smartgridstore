@@ -16,6 +16,7 @@ import (
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
+	"github.com/immesys/smartgridstore/tools/manifest"
 	"gopkg.in/btrdb.v4"
 
 	uuid "github.com/pborman/uuid"
@@ -33,7 +34,9 @@ const NUM_RHANDLES = 16
 
 const MANIFEST_PREFIX = "manifest/"
 
-var INGESTER_SPACE uuid.UUID = uuid.Parse("c9bbebff-ff40-4dbe-987e-f9e96afb7a57")
+const INGESTER_SPACE_STRING = "c9bbebff-ff40-4dbe-987e-f9e96afb7a57"
+
+var INGESTER_SPACE = uuid.Parse(INGESTER_SPACE_STRING)
 
 var rhPool chan *rados.IOContext
 
@@ -56,6 +59,7 @@ func main() {
 	fmt.Printf("Booting ingester version %d.%d.%d\n", VersionMajor, VersionMinor, VersionPatch)
 
 	var etcdPrefix string = os.Getenv("INGESTER_ETCD_CONFIG")
+	manifest.SetEtcdKeyPrefix(etcdPrefix)
 
 	var etcdEndpoint string = os.Getenv("ETCD_ENDPOINT")
 	if len(etcdEndpoint) == 0 {
@@ -182,14 +186,14 @@ func main() {
 			ytagbase = 10
 		}
 
-		resp, err := etcdConn.Get(ctx, etcdPrefix+MANIFEST_PREFIX+"psl.pqube3.", etcd.WithPrefix())
+		devs, err := manifest.RetrieveMultipleManifestDevices(ctx, etcdConn, "psl.pqube3.")
 		if err != nil {
 			panic(err)
 		}
+
 		wg := &sync.WaitGroup{}
-		for _, kv := range resp.Kvs {
-			key := string(kv.Key)
-			identifier := key[len(etcdPrefix)+len(MANIFEST_PREFIX):]
+		for _, dev := range devs {
+			identifier := dev.Descriptor
 			serial := strings.SplitN(identifier, ".", 3)[2]
 			uuids = make([]uuid.UUID, 0, len(upmuparser.STREAMS))
 			for _, canonical := range upmuparser.STREAMS {
@@ -198,7 +202,7 @@ func main() {
 			}
 			wg.Add(1)
 			fmt.Printf("Starting process loop of uPMU %v\n", identifier)
-			go startProcessLoop(ctx, serial, identifier, uuids, &alive, wg)
+			go startProcessLoop(ctx, serial, identifier, uuids, dev, &alive, wg)
 			num_uPMUs++
 		}
 
@@ -213,13 +217,13 @@ func main() {
 	}
 }
 
-func startProcessLoop(ctx context.Context, serial_number string, alias string, uuids []uuid.UUID, alivePtr *bool, wg *sync.WaitGroup) {
+func startProcessLoop(ctx context.Context, serial_number string, alias string, uuids []uuid.UUID, dev *manifest.ManifestDevice, alivePtr *bool, wg *sync.WaitGroup) {
 	mgo_addr := os.Getenv("MONGO_ADDR")
 	if mgo_addr == "" {
 		mgo_addr = "localhost:27017"
 	}
 
-	process_loop(ctx, alivePtr, serial_number, alias, uuids, btrdbconn)
+	process_loop(ctx, alivePtr, serial_number, alias, uuids, dev, btrdbconn)
 
 	wg.Done()
 }
@@ -370,7 +374,7 @@ func process(ctx context.Context, sernum string, alias string, streams []*btrdb.
 	return documentsFound
 }
 
-func process_loop(ctx context.Context, keepalive *bool, sernum string, alias string, uuids []uuid.UUID, bc *btrdb.BTrDB) {
+func process_loop(ctx context.Context, keepalive *bool, sernum string, alias string, uuids []uuid.UUID, dev *manifest.ManifestDevice, bc *btrdb.BTrDB) {
 	var i int
 	var streams = []*btrdb.Stream{}
 	for j, uu := range uuids {
@@ -381,7 +385,11 @@ func process_loop(ctx context.Context, keepalive *bool, sernum string, alias str
 			os.Exit(1)
 		}
 		if !ex {
-			stream, err = bc.Create(ctx, uu, fmt.Sprintf("psl.pqube3.%s", strings.ToLower(sernum)), map[string]string{"name": upmuparser.STREAMS[j]}, nil)
+			path, ok := dev.Metadata["path"]
+			if !ok {
+				panic(fmt.Errorf("path metadata is missing for device %s (needed for demo hack)", dev.Descriptor))
+			}
+			stream, err = bc.Create(ctx, uu /*fmt.Sprintf("psl.pqube3.%s", strings.ToLower(sernum))*/, path, map[string]string{"name": upmuparser.STREAMS[j]}, nil)
 			if err != nil {
 				fmt.Printf("Could not create stream in BTrDB: %v\n", err)
 				fmt.Printf("The name was %q\n", upmuparser.STREAMS[j])

@@ -37,6 +37,10 @@ func (md *ManifestDevice) GetRetrievedRevision() int64 {
 	return md.retrievedRevision
 }
 
+func SetEtcdKeyPrefix(prefix string) {
+	etcdprefix = prefix
+}
+
 func getEtcdKey(name string) string {
 	return fmt.Sprintf("%s%s%s", etcdprefix, manifestpath, name)
 }
