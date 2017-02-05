@@ -18,12 +18,12 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 0
+const VersionMinor = 1
 const VersionPatch = 0
 
 var FAILUREMSG = make([]byte, 4, 4)
 
-var Port = 1883
+var Port = 1884
 
 const (
 	CONNBUFLEN            = 1024 // number of bytes we read from the connection at a time
@@ -231,7 +231,7 @@ func main() {
 	//Load variables
 	prt := os.Getenv("RECEIVER_PORT")
 	if prt == "" {
-		Port = 1883
+		Port = 1884
 	} else {
 		p, err := strconv.ParseInt(prt, 10, 64)
 		if err != nil {

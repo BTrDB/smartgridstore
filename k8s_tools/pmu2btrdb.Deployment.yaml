@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pmu2btrdb
+spec:
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: pmu2btrdb
+    spec:
+      containers:
+      - name: pmu2btrdb
+        image: btrdb/pmu2btrdb:latest
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: RECEIVER_PORT
+            value: "1884"
+          - name: BTRDB_ENPOINTS
+            value: btrdb-bootstrap:4410
+        ports:
+        - containerPort: 1884
+          protocol: TCP
+          name: pmu2btrdb-legacy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pmu2btrdb
+  labels:
+    app: pmu2btrdb
+spec:
+  ports:
+  - port: 1884
+    targetPort: pmu2btrdb-legacy
+    name: pmu2btrdb-legacy
+  externalIPs:
+    #here you should choose some IP addresses in your cluster that you
+    #would like receiver to be available on. Ensure that port 1883
+    #is not already used on the machines these IPs route to
+  selector:
+    app: pmu2btrdb

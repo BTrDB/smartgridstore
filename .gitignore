@@ -4,3 +4,5 @@ containers/simulator/simulator
 containers/receiver/receiver
 tools/ingester/ingester
 containers/ingester/ingester
+tools/pmu2btrdb/pmu2btrdb
+containers/pmu2btrdb/pmu2btrdb
