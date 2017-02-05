@@ -5,11 +5,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	btrdb "gopkg.in/btrdb.v4"
@@ -18,7 +20,7 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 2
+const VersionMinor = 3
 const VersionPatch = 0
 
 var FAILUREMSG = make([]byte, 4, 4)
@@ -41,6 +43,65 @@ var insertionSemaphore chan struct{}
 
 func roundUp4(x uint32) uint32 {
 	return (x + 3) & 0xFFFFFFFC
+}
+
+type insertstats struct {
+	minlatency   uint64
+	maxlatency   uint64
+	totallatency uint64
+	insertcount  uint64
+}
+
+var processing insertstats
+var queueing insertstats
+var response insertstats
+
+func resetStats(stats *insertstats) {
+	atomic.StoreUint64(&stats.minlatency, math.MaxUint64)
+	atomic.StoreUint64(&stats.maxlatency, 0)
+	atomic.StoreUint64(&stats.totallatency, 0)
+	atomic.StoreUint64(&stats.insertcount, 0)
+}
+
+func printStatsAndReset(stats *insertstats, prefix string) {
+	cnt := atomic.LoadUint64(&stats.insertcount)
+	if cnt == 0 {
+		resetStats(stats)
+		log.Printf("%s: No records processed", prefix)
+		return
+	}
+	avg := float64(atomic.LoadUint64(&stats.totallatency)) / float64(cnt)
+	min := atomic.LoadUint64(&stats.minlatency)
+	max := atomic.LoadUint64(&stats.maxlatency)
+	log.Printf("%s: Min = %v, Mean = %v, Max = %v, NumRecords = %v", prefix, min, avg, max, cnt)
+}
+
+func updateStats(stats *insertstats, latency uint64) {
+	var success bool
+	success = false
+	for !success {
+		var newmin uint64
+		oldmin := atomic.LoadUint64(&stats.minlatency)
+		if latency < oldmin {
+			newmin = latency
+		} else {
+			newmin = oldmin
+		}
+		success = atomic.CompareAndSwapUint64(&stats.minlatency, oldmin, newmin)
+	}
+	success = false
+	for !success {
+		var newmax uint64
+		oldmax := atomic.LoadUint64(&stats.maxlatency)
+		if oldmax < latency {
+			newmax = latency
+		} else {
+			newmax = oldmax
+		}
+		success = atomic.CompareAndSwapUint64(&stats.maxlatency, oldmax, newmax)
+	}
+	atomic.AddUint64(&stats.totallatency, latency)
+	atomic.AddUint64(&stats.insertcount, 1)
 }
 
 func handlePMUConn(conn *net.TCPConn) {
@@ -191,23 +252,29 @@ func handlePMUConn(conn *net.TCPConn) {
 					fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
 
 					go func() {
+						queuestart := time.Now()
 						insertionSemaphore <- struct{}{}
 						defer func() {
 							<-insertionSemaphore
 						}()
+						updateStats(&queueing, uint64(time.Since(queuestart)))
 
+						processstart := time.Now()
 						success := processMessage(context.TODO(), sernum, dtbuffer[:lendt])
-
 						resp := sendid
 						if !success {
 							resp = FAILUREMSG
 						}
+						updateStats(&processing, uint64(time.Since(processstart)))
+
+						respstart := time.Now()
 						outlock.Lock()
 						_, erw = conn.Write(resp)
 						outlock.Unlock()
 						if erw != nil {
 							fmt.Printf("Connection lost: %v (write failed: %v)\n", conn.RemoteAddr().String(), erw)
 						}
+						updateStats(&response, uint64(time.Since(respstart)))
 					}()
 				}
 			}
@@ -282,6 +349,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not create bound TCP server socket: %v\n", err)
 	}
+
+	resetStats(&queueing)
+	resetStats(&processing)
+	resetStats(&response)
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			log.Printf("Num goroutines: %v", runtime.NumGoroutine())
+			printStatsAndReset(&queueing, "Queueing")
+			printStatsAndReset(&processing, "Processing")
+			printStatsAndReset(&response, "Response")
+		}
+	}()
 
 	log.Println("Waiting for incoming connections...")
 
