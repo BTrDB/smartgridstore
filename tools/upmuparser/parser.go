@@ -6,41 +6,43 @@ import (
 	"io"
 )
 
+const ReadingsPerStruct = 120
+
 type Upmu_vector struct {
-	Phase_in_degrees float32
+	Phase_in_degrees            float32
 	Fundamental_magnitude_volts float32
 } // 8 bytes
 
 type Upmu_one_second_set struct {
 	Sample_interval_in_milliseconds float32
-	Timestamp [6]int32
-	Status [120]int32
-	L1_e_vector_space [120]Upmu_vector
-	L2_e_vector_space [120]Upmu_vector
-	L3_e_vector_space [120]Upmu_vector
-	C1_e_vector_space [120]Upmu_vector
-	C2_e_vector_space [120]Upmu_vector
-	C3_e_vector_space [120]Upmu_vector
+	Timestamp                       [6]int32
+	Status                          [120]int32
+	L1_e_vector_space               [120]Upmu_vector
+	L2_e_vector_space               [120]Upmu_vector
+	L3_e_vector_space               [120]Upmu_vector
+	C1_e_vector_space               [120]Upmu_vector
+	C2_e_vector_space               [120]Upmu_vector
+	C3_e_vector_space               [120]Upmu_vector
 } // 6268 bytes
 
 type Upmu_one_second_expansion_set_one struct {
-	Fundamental_watts_total [120]float32
-	Fundamental_var_total [120]float32
-	Fundamental_va_total [120]float32
-	Fundamental_dpf_total [120]float32
+	Fundamental_watts_total   [120]float32
+	Fundamental_var_total     [120]float32
+	Fundamental_va_total      [120]float32
+	Fundamental_dpf_total     [120]float32
 	Frequency_l1_e_one_second [120]float32
-	Frequency_l1_e_c37 [120]float32
+	Frequency_l1_e_c37        [120]float32
 } // 2880 bytes
 
 type Upmu_one_second_output_standard struct {
-	Data Upmu_one_second_set
+	Data                Upmu_one_second_set
 	Upmu_debug_info_pll [4]uint32 // the actual struct definition says 'umpu'
 	Upmu_debug_info_gps [7]float32
 } // 6312 bytes
 
 type Upmu_one_second_output_expansion_set_one struct {
-    Basic_data Upmu_one_second_output_standard
-    Expansion_set_one Upmu_one_second_expansion_set_one
+	Basic_data        Upmu_one_second_output_standard
+	Expansion_set_one Upmu_one_second_expansion_set_one
 } // 9192 bytes
 
 const UPMU_ONE_SECOND_OUTPUT_STANDARD_SIZE int = 6312
@@ -55,24 +57,24 @@ const (
 
 type Sync_Output struct {
 	Version Sync_Output_Type
-	Data Upmu_one_second_output_expansion_set_one
+	Data    Upmu_one_second_output_expansion_set_one
 }
 
 type decoder struct {
 	index int
-	data []uint8
+	data  []uint8
 }
 
 func (d *decoder) Read(b []byte) (n int, err error) {
 	var i int
 	n = len(b)
 	var outOfSpace bool = false
-	if len(d.data) - d.index < n {
+	if len(d.data)-d.index < n {
 		n = len(d.data) - d.index
 		outOfSpace = true
 	}
 	for i = 0; i < n; i++ {
-		b[i] = d.data[d.index + i]
+		b[i] = d.data[d.index+i]
 	}
 	d.index = d.index + n
 	if outOfSpace {
@@ -96,7 +98,7 @@ func parse_sync_output(d *decoder) (*Sync_Output, error) {
 	}
 
 	for _, status := range output.Data.Basic_data.Data.Status {
-		if status & 0xe0 != 0 {
+		if status&0xe0 != 0 {
 			newversion = true
 			break
 		}
@@ -190,42 +192,42 @@ func GetLockState(index int, obj *Sync_Output) float64 {
 }
 
 func GetFundW(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Fundamental_watts_total[index])
 }
 
 func GetFundVar(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Fundamental_var_total[index])
 }
 
 func GetFundVA(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Fundamental_va_total[index])
 }
 
 func GetFundDPF(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Fundamental_dpf_total[index])
 }
 
 func GetFreqL11S(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Frequency_l1_e_one_second[index])
 }
 
 func GetFreqL1C37(index int, obj *Sync_Output) float64 {
-	if (obj.Version < EXPANSION_SET_ONE) {
+	if obj.Version < EXPANSION_SET_ONE {
 		panic("invalid type for insert getter")
 	}
 	return float64(obj.Data.Expansion_set_one.Frequency_l1_e_c37[index])
@@ -233,14 +235,14 @@ func GetFreqL1C37(index int, obj *Sync_Output) float64 {
 
 type InsertGetter func(int, *Sync_Output) float64
 
-var STREAMS [19]string = [19]string{"L1MAG", "L1ANG", "L2MAG", "L2ANG", "L3MAG", "L3ANG","C1MAG", "C1ANG", "C2MAG", "C2ANG", "C3MAG", "C3ANG", "LSTATE", "FUND_W", "FUND_VAR", "FUND_VA", "FUND_DPF", "FREQ_L1_1S", "FREQ_L1_C37"}
+var STREAMS [19]string = [19]string{"L1MAG", "L1ANG", "L2MAG", "L2ANG", "L3MAG", "L3ANG", "C1MAG", "C1ANG", "C2MAG", "C2ANG", "C3MAG", "C3ANG", "LSTATE", "FUND_W", "FUND_VAR", "FUND_VA", "FUND_DPF", "FREQ_L1_1S", "FREQ_L1_C37"}
 
 func (s *Sync_Output) GetInsertGetters() []InsertGetter {
 	var getters = make([]InsertGetter, 0, len(STREAMS))
-	if (s.Version >= OUTPUT_STANDARD) {
+	if s.Version >= OUTPUT_STANDARD {
 		getters = append(getters, GetL1Mag, GetL1Ang, GetL2Mag, GetL2Ang, GetL3Mag, GetL3Ang, GetC1Mag, GetC1Ang, GetC2Mag, GetC2Ang, GetC3Mag, GetC3Ang, GetLockState)
 	}
-	if (s.Version >= EXPANSION_SET_ONE) {
+	if s.Version >= EXPANSION_SET_ONE {
 		getters = append(getters, GetFundW, GetFundVar, GetFundVA, GetFundDPF, GetFreqL11S, GetFreqL1C37)
 	}
 	return getters

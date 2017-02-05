@@ -15,8 +15,8 @@ import (
 
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools/ingester/upmuparser"
 	"github.com/immesys/smartgridstore/tools/manifest"
+	"github.com/immesys/smartgridstore/tools/upmuparser"
 	"gopkg.in/btrdb.v4"
 
 	uuid "github.com/pborman/uuid"
