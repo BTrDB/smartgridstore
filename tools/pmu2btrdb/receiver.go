@@ -20,7 +20,7 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 3
+const VersionMinor = 4
 const VersionPatch = 0
 
 var FAILUREMSG = make([]byte, 4, 4)
@@ -249,7 +249,7 @@ func handlePMUConn(conn *net.TCPConn) {
 					}
 					// if we've reached this point, we have all the data
 					recvdfull = true
-					fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
+					//fmt.Printf("Received %s: serial number is %s, length is %v\n", filepath, sernum, lendt)
 
 					go func() {
 						queuestart := time.Now()
