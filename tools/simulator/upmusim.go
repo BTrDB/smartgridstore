@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,7 +19,9 @@ func roundUp4(x uint32) uint32 {
 }
 
 //simulate a PMU waiting interval seconds between files
-func simulatePmu(conn net.Conn, serialint int64, interval int64) {
+func simulatePmu(conn net.Conn, serialint int64, interval int64, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	var sendid uint32 = 0
 
 	//Add jitter to simulation

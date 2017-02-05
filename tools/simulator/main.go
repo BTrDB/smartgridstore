@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -38,7 +39,7 @@ func main() {
 
 	num_tcps := os.Getenv("SIMULATOR_TCP_CONNECTIONS")
 	if num_tcps == "" {
-		fmt.Println("Missing $NUM_TCP_CONNECTIONS, assuming 1")
+		fmt.Println("Missing $SIMULATOR_TCP_CONNECTIONS, assuming 1")
 		num_tcps = "1"
 	}
 
@@ -103,10 +104,15 @@ func main() {
 					continue
 				}
 
+				wg := &sync.WaitGroup{}
+
 				for j := int64(0); j < i_num_pmus_per; j++ {
 					serial := int64(3500000) + ((index * i_num_pmus_per) + j) + i_offset
-					go simulatePmu(conn, serial, i_interval)
+					wg.Add(1)
+					go simulatePmu(conn, serial, i_interval, wg)
 				}
+
+				wg.Wait()
 			}
 		}
 		go simulatePMUs(i)
