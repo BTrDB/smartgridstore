@@ -91,7 +91,7 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 				log.Printf("No manifest device info for %v was found; falling back to descriptor", desc)
 				path = desc
 			}
-			s, err = bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, []byte{})
+			s, err = bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, nil)
 			if err != nil {
 				log.Fatalf("Could not create stream in BTrDB: %v", err)
 			}
