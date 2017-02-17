@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	btrdbcli "github.com/SoftwareDefinedBuildings/btrdb/cliplugin"
 	"github.com/SoftwareDefinedBuildings/mr-plotter/accounts"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/acl"
@@ -23,11 +24,13 @@ func GetRootModule(c *etcd.Client, user string) admincli.CLIModule {
 	mrp := mrplotterconf.NewMrPlotterCLIModule(c)
 	acl := acl.NewACLModule(c, user)
 	manifest := mfst.NewManifestCLIModule(c)
+	btrdb := btrdbcli.NewBTrDBCLI(c)
 	r := &admincli.GenericCLIModule{
 		MChildren: []admincli.CLIModule{
 			mrp,
 			acl,
 			manifest,
+			btrdb,
 		},
 	}
 	return r

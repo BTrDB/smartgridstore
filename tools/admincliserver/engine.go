@@ -85,7 +85,7 @@ func (s *sess) List() string {
 	for _, c := range s.CurrentModule().Children() {
 		n := c.Name()
 		if !c.Runnable() {
-			n = "/" + n
+			n = n + "/"
 		}
 		if c.Hint() == "" {
 			buffer.WriteString(fmt.Sprintf("%s\n", n))
@@ -171,13 +171,16 @@ func handleSession(link io.ReadWriteCloser, widthch chan int, user, ip string, r
 	var width uint64 = 80
 	gotwidth := make(chan bool)
 	go func() {
+		hasclosed := false
 		for w := range widthch {
-			fmt.Printf("got width %d\n", w)
 			if w == -1 {
 				w = 80
 			}
 			atomic.StoreUint64(&width, uint64(w))
-			close(gotwidth)
+			if !hasclosed {
+				close(gotwidth)
+				hasclosed = true
+			}
 		}
 	}()
 	select {
