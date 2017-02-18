@@ -6,7 +6,7 @@ go build -v
 ver=$(./ingester -version)
 popd
 cp ../../tools/ingester/ingester .
-docker build -t btrdb/ingester:${ver} .
-docker push btrdb/ingester:${ver}
-docker tag btrdb/ingester:${ver} btrdb/ingester:latest
-docker push btrdb/ingester:latest
+docker build -t btrdb/dev-ingester:${ver} .
+docker push btrdb/dev-ingester:${ver}
+docker tag btrdb/dev-ingester:${ver} btrdb/dev-ingester:latest
+docker push btrdb/dev-ingester:latest

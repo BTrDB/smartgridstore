@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ingester-upmu
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ingester-upmu
+    spec:
+      containers:
+      - name: ingester
+        image: btrdb/ingester:latest
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: RECEIVER_POOL
+            value: btrdb
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
+        volumeMounts:
+          - name: ceph-keyring
+            mountPath: /etc/ceph/
+            readOnly: true
+      volumes:
+        - name: ceph-keyring
+          secret:
+            secretName: ceph-keyring

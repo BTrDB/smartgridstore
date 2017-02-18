@@ -1,0 +1,60 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: receiver-upmu
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: receiver-upmu
+    spec:
+      containers:
+      - name: receiver
+        image: btrdb/receiver:latest
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "1000m"
+          limits:
+            memory: "1024Mi"
+            cpu: "2000m"
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: RECEIVER_PORT
+            value: "1883"
+          - name: RECEIVER_POOL
+            value: btrdb
+          - name: RECEIVER_GENERATION
+            value: "10"
+        volumeMounts:
+          - name: ceph-keyring
+            mountPath: /etc/ceph/
+            readOnly: true
+        ports:
+        - containerPort: 1883
+          protocol: TCP
+          name: receiver-legacy
+      volumes:
+        - name: ceph-keyring
+          secret:
+            secretName: ceph-keyring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: receiver-upmu
+  labels:
+    app: receiver-upmu
+spec:
+  ports:
+  - port: 1883
+    targetPort: receiver-legacy
+    name: receiver-legacy
+  externalIPs:
+    #here you should choose some IP addresses in your cluster that you
+    #would like receiver to be available on. Ensure that port 1883
+    #is not already used on the machines these IPs route to
+  selector:
+    app: receiver-upmu
