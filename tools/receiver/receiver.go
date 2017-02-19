@@ -17,8 +17,8 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 3
-const VersionPatch = 0
+const VersionMinor = 4
+const VersionPatch = 3
 
 var logger *logging.Logger
 

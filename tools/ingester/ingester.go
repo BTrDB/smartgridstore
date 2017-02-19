@@ -23,8 +23,8 @@ import (
 )
 
 const VersionMajor = 4
-const VersionMinor = 1
-const VersionPatch = 1
+const VersionMinor = 4
+const VersionPatch = 3
 
 var btrdbconn *btrdb.BTrDB
 var ytagbase int = 0
