@@ -1,0 +1,81 @@
+# {{ .GenLine }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: btrdb
+  labels:
+    app: btrdb
+spec:
+  ports:
+  - port: 4410
+    name: grpc
+  - port: 9000
+    name: http
+  clusterIP: None
+  selector:
+    app: btrdb
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: btrdb
+spec:
+  serviceName: "btrdb"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: btrdb
+    spec:
+      containers:
+      - name: btrdb
+        image: btrdb/{{.Pfx}}db:{{.TargetVersion}}
+        resources:
+          requests:
+            cpu: "10"
+            # changing this memory limit will not change how much memory
+            # btrdb tries to use. That feature will come later
+            memory: 32Gi
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: CEPH_HOT_POOL
+            value: {{.SiteInfo.Ceph.BTrDBPool}}
+          - name: CEPH_DATA_POOL
+            value: {{.SiteInfo.Ceph.BTrDBPool}}
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        volumeMounts:
+          - name: ceph-keyring
+            mountPath: /etc/ceph/
+            readOnly: true
+        ports:
+        - containerPort: 4410
+          protocol: TCP
+        - containerPort: 9000
+          protocol: TCP
+      volumes:
+        - name: ceph-keyring
+          secret:
+            secretName: ceph-keyring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: btrdb-bootstrap
+  labels:
+    app: btrdb
+spec:
+  ports:
+  - port: 4410
+    targetPort: 4410
+    name: grpc
+  selector:
+    app: btrdb

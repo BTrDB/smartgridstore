@@ -1,0 +1,51 @@
+# {{ .GenLine }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mrplotter
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: mrplotter
+    spec:
+      containers:
+      - name: mrplotter
+        image: btrdb/{{.Pfx}}mrplotter:{{.TargetVersion}}
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "1000m"
+          limits:
+            memory: "512Mi"
+            cpu: "2000m"
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
+        ports:
+        - containerPort: 443
+          protocol: TCP
+        - containerPort: 80
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mrplotter
+  labels:
+    app: mrplotter
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 443
+    targetPort: 443
+    name: https
+  externalIPs:{{range .SiteInfo.ExternalIPs}}
+  - {{.}}{{end}}
+  selector:
+    app: mrplotter

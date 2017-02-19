@@ -1,0 +1,42 @@
+# {{ .GenLine }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: pmu2btrdb
+spec:
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: pmu2btrdb
+    spec:
+      containers:
+      - name: pmu2btrdb
+        image: btrdb/{{.Pfx}}pmu2btrdb:{{.TargetVersion}}
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: RECEIVER_PORT
+            value: "1884"
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
+        ports:
+        - containerPort: 1884
+          protocol: TCP
+          name: pmu2btrdb-lgcy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pmu2btrdb
+  labels:
+    app: pmu2btrdb
+spec:
+  ports:
+  - port: 1884
+    targetPort: pmu2btrdb-lgcy
+    name: pmu2btrdb-lgcy
+  externalIPs:{{range .SiteInfo.ExternalIPs}}
+  - {{.}}{{end}}
+  selector:
+    app: pmu2btrdb
