@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SoftwareDefinedBuildings/btrdb/bte"
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/tools/manifest"
@@ -229,9 +230,9 @@ func startProcessLoop(ctx context.Context, serial_number string, alias string, u
 }
 
 func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB, feedback chan int) {
-	var sampleRate float32 = output.SampleRate()
-	var numPoints int = int((1000.0 / sampleRate) + 0.5)
-	var timeDelta float64 = float64(sampleRate) * 1000000 // convert to nanoseconds
+	var sampleRate = output.SampleRate()
+	var numPoints = int((1000.0 / sampleRate) + 0.5)
+	var timeDelta = float64(sampleRate) * 1000000 // convert to nanoseconds
 
 	points := make([]btrdb.RawPoint, numPoints)
 	for i := 0; i != len(points); i++ {
@@ -239,12 +240,20 @@ func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser
 		points[i].Value = getValue(i, output)
 	}
 
-	err := stream.Insert(ctx, points)
-	if err == nil {
-		feedback <- 0
-	} else {
-		fmt.Printf("Error inserting data: %v\n", err)
-		feedback <- 1
+	var done bool
+	for !done {
+		err := stream.Insert(ctx, points)
+		done = true
+		if err == nil {
+			feedback <- 0
+		} else {
+			fmt.Printf("Error inserting data: %v\n", err)
+			if btrdb.ToCodedError(err).Code != bte.ResourceDepleted {
+				done = false
+				time.Sleep(5 * time.Second)
+			}
+			feedback <- 1
+		}
 	}
 }
 
