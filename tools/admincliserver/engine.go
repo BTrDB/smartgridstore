@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	readline "github.com/chzyer/readline"
+	shellwords "github.com/immesys/go-shellwords"
+	readline "github.com/immesys/readline"
 	"github.com/immesys/smartgridstore/admincli"
-	shellwords "github.com/mattn/go-shellwords"
 )
 
 type sess struct {

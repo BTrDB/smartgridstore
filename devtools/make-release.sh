@@ -2,7 +2,9 @@
 
 echo "determining version"
 
-set -e
+set -ex
+
+PFX="dev-"
 
 pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/btrdbd
 go build
@@ -20,10 +22,10 @@ then
   echo "Mr. Plotter version mismatch - got $mrp_ver"
   exit 1
 fi
-pushd ../tools/hardcodecert
+pushd tools/hardcodecert
 go build -v
 popd
-pushd ../tools/setsessionkeys
+pushd tools/setsessionkeys
 go build -v
 popd
 
@@ -85,52 +87,51 @@ fi
 popd
 
 echo "All versions match $target_ver, building and pushing containers"
-
 set -e
 
-pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/k8s_container
+pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/k8scontainer
 cp ../btrdbd/btrdbd .
-docker build btrdb/db:$target_ver .
-docker push btrdb/db:$target_ver
+docker build -t btrdb/${PFX}db:$target_ver .
+docker push btrdb/${PFX}db:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/mr-plotter/container
 cp ../mr-plotter .
 cp ../tools/hardcodecert/hardcodecert .
 cp ../tools/setsessionkeys/setsessionkeys .
-docker build btrdb/mrplotter:$target_ver .
-docker push btrdb/mrplotter:$target_ver
+docker build -t btrdb/${PFX}mrplotter:$target_ver .
+docker push btrdb/${PFX}mrplotter:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/adminconsole
 cp ../../tools/admincliserver/admincliserver .
-docker build btrdb/console:$target_ver .
-docker push btrdb/console:$target_ver
+docker build -t  btrdb/${PFX}console:$target_ver .
+docker push btrdb/${PFX}console:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/ingester
 cp ../../tools/ingester/ingester .
-docker build btrdb/ingester:$target_ver .
-docker push btrdb/ingester:$target_ver
+docker build -t btrdb/${PFX}ingester:$target_ver .
+docker push btrdb/${PFX}ingester:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/receiver
 cp ../../tools/receiver/receiver .
-docker build btrdb/receiver:$target_ver .
-docker push btrdb/receiver:$target_ver
+docker build -t btrdb/${PFX}receiver:$target_ver .
+docker push btrdb/${PFX}receiver:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/pmu2btrdb
 cp ../../tools/pmu2btrdb/pmu2btrdb .
-docker build btrdb/pmu2btrdb:$target_ver .
-docker push btrdb/pmu2btrdb:$target_ver
+docker build -t btrdb/${PFX}pmu2btrdb:$target_ver .
+docker push btrdb/${PFX}pmu2btrdb:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/simulator
 cp ../../tools/simulator/simulator .
-docker build btrdb/simulator:$target_ver .
-docker push btrdb/simulator:$target_ver
+docker build -t btrdb/${PFX}simulator:$target_ver .
+docker push btrdb/${PFX}simulator:$target_ver
 popd
 
 echo "DONE!"
-echo "Release $target_ver is published"
+echo "Release ${PFX}$target_ver is published"
