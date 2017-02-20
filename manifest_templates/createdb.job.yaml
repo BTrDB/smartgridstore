@@ -14,6 +14,7 @@ spec:
       containers:
       - name: btrdb-createdb
         image: btrdb/{{.Pfx}}db:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         args: [ "makedb" ]
         env:
           - name: ETCD_ENDPOINT

@@ -31,6 +31,7 @@ spec:
       containers:
       - name: btrdb
         image: btrdb/{{.Pfx}}db:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         resources:
           requests:
             cpu: "10"

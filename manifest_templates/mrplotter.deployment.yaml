@@ -13,6 +13,7 @@ spec:
       containers:
       - name: mrplotter
         image: btrdb/{{.Pfx}}mrplotter:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         resources:
           requests:
             memory: "256Mi"

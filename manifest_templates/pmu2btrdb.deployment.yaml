@@ -13,6 +13,7 @@ spec:
       containers:
       - name: pmu2btrdb
         image: btrdb/{{.Pfx}}pmu2btrdb:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379

@@ -13,6 +13,7 @@ spec:
       containers:
       - name: receiver
         image: btrdb/{{.Pfx}}receiver:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         resources:
           requests:
             memory: "512Mi"

@@ -13,6 +13,7 @@ spec:
       containers:
       - name: console
         image: btrdb/{{.Pfx}}console:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379

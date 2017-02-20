@@ -13,6 +13,7 @@ spec:
       containers:
       - name: ingester
         image: btrdb/{{.Pfx}}ingester:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379
