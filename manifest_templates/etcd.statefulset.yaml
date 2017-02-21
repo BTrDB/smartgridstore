@@ -39,8 +39,6 @@ spec:
           value: http://0.0.0.0:2379
         - name: ETCD_DATA_DIR
           value: /srv/etcd
-        - name: ETCD_INITIAL_CLUSTER_STATE
-          value: new
         - name: ETCD_AUTO_COMPACTION_RETENTION
           value: "1"
         - name: ETCD_QUOTA_BACKEND_BYTES
@@ -51,11 +49,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        command:
-        - sh
-        - -c
-        - /usr/local/bin/etcd --name $MY_POD_NAME --initial-advertise-peer-urls http://${MY_POD_NAME}.etcd:2380 --advertise-client-urls http://${MY_POD_NAME}.etcd:2379
-        image: quay.io/coreos/etcd:latest
+        image: btrdb/etcd:3.1.1
+        imagePullPolicy: Always
         ports:
         - containerPort: 2379
           name: client
@@ -63,3 +58,55 @@ spec:
         - containerPort: 2380
           name: server
           protocol: TCP
+        volumeMounts:
+        - name: etcd-datadir
+          mountPath: /srv/persist
+  volumeClaimTemplates:
+  - metadata:
+      name: etcd-datadir
+      labels:
+        app: etcd
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: etcd-backup
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: etcd-backup
+    spec:
+      containers:
+      - name: backup
+        image: btrdb/etcd:3.1.1
+        args:
+        - backup
+        imagePullPolicy: Always
+        env:
+          - name: BACKUP_INTERVAL_SECS
+            value: "21600"
+        volumeMounts:
+        - name: etcd-backup
+          mountPath: /srv/persist
+      volumes:
+        - name: etcd-backup
+          persistentVolumeClaim:
+            claimName: etcd-backup
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: etcd-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Gi
