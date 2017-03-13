@@ -49,7 +49,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: btrdb/etcd:3.1.1
+        image: btrdb/etcd:3.1.3
         imagePullPolicy: Always
         ports:
         - containerPort: 2379
@@ -58,6 +58,7 @@ spec:
         - containerPort: 2380
           name: server
           protocol: TCP
+{{if eq .Misc.AvoidStorageClass false }}
         volumeMounts:
         - name: etcd-datadir
           mountPath: /srv/persist
@@ -85,7 +86,7 @@ spec:
     spec:
       containers:
       - name: backup
-        image: btrdb/etcd:3.1.1
+        image: btrdb/etcd:3.1.3
         args:
         - backup
         imagePullPolicy: Always
@@ -110,3 +111,4 @@ spec:
   resources:
     requests:
       storage: 200Gi
+{{end}}

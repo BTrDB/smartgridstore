@@ -3,7 +3,7 @@ FROM ubuntu:xenial
 ENV ETCDCTL_VERSION v3.1.0
 ENV ETCDCTL_ARCH linux-amd64
 ENV CEPH_VERSION jewel
-ENV KUBE_VERSION v1.5.2
+ENV KUBE_VERSION v1.5.4
 
 RUN apt-get update && apt-get install -y net-tools git build-essential wget
 RUN wget -q -O- 'https://download.ceph.com/keys/release.asc' | apt-key add - && \

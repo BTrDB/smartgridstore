@@ -25,7 +25,7 @@ import (
 
 const VersionMajor = 4
 const VersionMinor = 4
-const VersionPatch = 3
+const VersionPatch = 4
 
 var btrdbconn *btrdb.BTrDB
 var ytagbase int = 0

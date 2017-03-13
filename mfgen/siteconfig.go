@@ -20,6 +20,9 @@ type SiteConfig struct {
 		} `yaml:"ceph"`
 		ExternalIPs []string `yaml:"externalIPs"`
 	} `yaml:"siteInfo"`
+	Misc struct {
+		AvoidStorageClass bool `yaml:"avoidStorageClass"`
+	} `yaml:"misc"`
 }
 
 const DefaultSiteConfig = `apiVersion: smartgrid.store/v1
@@ -33,7 +36,9 @@ siteInfo:
     btrdbPool: btrdb
     rbdPool: rbd
   externalIPs:
-  - 128.32.37.141
+  - 123.123.123.1
+misc:
+  avoidStorageClass: false
 `
 
 func LoadSiteConfig(filename string) (*SiteConfig, error) {
