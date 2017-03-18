@@ -21,7 +21,7 @@ import (
 
 const VersionMajor = 4
 const VersionMinor = 4
-const VersionPatch = 4
+const VersionPatch = 5
 
 var FAILUREMSG = make([]byte, 4, 4)
 
