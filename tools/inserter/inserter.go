@@ -1,4 +1,4 @@
-package main
+package inserter
 
 import (
 	"context"
@@ -7,30 +7,29 @@ import (
 	"strings"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools/manifest"
 	"github.com/immesys/smartgridstore/tools/upmuparser"
 	"github.com/pborman/uuid"
 
 	btrdb "gopkg.in/btrdb.v4"
 )
 
+// UpmuSpaceString is UpmuSpace as a human-readable string
 const UpmuSpaceString = "c9bbebff-ff40-4dbe-987e-f9e96afb7a57"
 
+// UpmuSpace is used to generate deterministic UUIDs...
 var UpmuSpace = uuid.Parse(UpmuSpaceString)
-var bc *btrdb.BTrDB
-var ec *etcd.Client
 
-func descriptorFromSerial(serial string) string {
-	return strings.ToLower(fmt.Sprintf("psl.pqube3.%s", serial))
+func DescriptorFromSerial(serial string) string {
+	return strings.ToLower(fmt.Sprintf("psl/pqube3/%s", serial))
 }
 
-func getUUID(serial string, streamname string) uuid.UUID {
-	streamid := fmt.Sprintf("%v.%v", descriptorFromSerial(serial), streamname)
+func GetUUID(serial string, streamname string) uuid.UUID {
+	streamid := fmt.Sprintf("%v/%v", DescriptorFromSerial(serial), streamname)
 	return uuid.NewSHA1(UpmuSpace, []byte(streamid))
 }
 
-func processMessage(ctx context.Context, sernum string, data []byte) bool {
+// ProcessMessage processes a message from a uPMU, inserting it into BTrDB
+func ProcessMessage(ctx context.Context, sernum string, data []byte, bc *btrdb.BTrDB, serialToPath func(ctx context.Context, sernum string) string) bool {
 	parsed, err := upmuparser.ParseSyncOutArray(data)
 	if err != nil {
 		log.Printf("Could not parse data from %v: %v", sernum, err)
@@ -53,7 +52,7 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 		}
 	}
 
-	var dev *manifest.ManifestDevice
+	var path string
 
 	// Now let's go ahead and insert the data
 	for sid, dataset := range toinsert {
@@ -62,7 +61,7 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 			continue
 		}
 
-		uu := getUUID(sernum, upmuparser.STREAMS[sid])
+		uu := GetUUID(sernum, upmuparser.STREAMS[sid])
 		s := bc.StreamFromUUID(uu)
 		ex, err := s.Exists(ctx)
 		if err != nil {
@@ -70,26 +69,8 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 		}
 		if !ex {
 			// We need to actually create the stream. First, we query the path from etcd
-			desc := descriptorFromSerial(sernum)
-
-			if dev == nil {
-				dev, err = manifest.RetrieveManifestDevice(ctx, ec, desc)
-				if err != nil {
-					log.Fatalf("Could not check for device path in etcd: %v", err)
-				}
-			}
-
-			var path string
-			if dev != nil {
-				var ok bool
-				path, ok = dev.Metadata["path"]
-				if !ok {
-					log.Printf("Device %v is missing the path metadata; falling back to descriptor", desc)
-					path = desc
-				}
-			} else {
-				log.Printf("No manifest device info for %v was found; falling back to descriptor", desc)
-				path = desc
+			if path == "" {
+				path = serialToPath(ctx, sernum)
 			}
 			s, err = bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, nil)
 			if err != nil {
@@ -99,7 +80,7 @@ func processMessage(ctx context.Context, sernum string, data []byte) bool {
 
 		err = s.Insert(ctx, dataset)
 		if err != nil {
-			log.Fatalf("Could not insert stream %v of %v into BTrDB: %v", upmuparser.STREAMS[sid], descriptorFromSerial(sernum), err)
+			log.Fatalf("Could not insert stream %v of %v into BTrDB: %v", upmuparser.STREAMS[sid], DescriptorFromSerial(sernum), err)
 		}
 	}
 
