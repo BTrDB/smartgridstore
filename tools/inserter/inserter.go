@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/immesys/smartgridstore/tools/upmuparser"
@@ -29,7 +30,7 @@ func GetUUID(serial string, streamname string) uuid.UUID {
 }
 
 // ProcessMessage processes a message from a uPMU, inserting it into BTrDB
-func ProcessMessage(ctx context.Context, sernum string, data []byte, bc *btrdb.BTrDB, serialToPath func(ctx context.Context, sernum string) string) bool {
+func ProcessMessage(ctx context.Context, sernum string, data []byte, bc *btrdb.BTrDB, serialToPath func(ctx context.Context, sernum string) string, ic chan InsertReq) bool {
 	parsed, err := upmuparser.ParseSyncOutArray(data)
 	if err != nil {
 		log.Printf("Could not parse data from %v: %v", sernum, err)
@@ -90,11 +91,39 @@ func ProcessMessage(ctx context.Context, sernum string, data []byte, bc *btrdb.B
 			}
 		}
 
-		err = s.Insert(ctx, dataset)
-		if err != nil {
-			log.Fatalf("Could not insert stream %v of %v into BTrDB: %v", upmuparser.STREAMS[sid], DescriptorFromSerial(sernum), err)
+		j := 0
+		for j != len(dataset) {
+			end := j + 5000
+			if end > len(dataset) {
+				end = len(dataset)
+			}
+			minibuf := dataset[j:end]
+			ic <- InsertReq{
+				s:       s,
+				dataset: minibuf,
+				sid:     sid,
+				sernum:  sernum,
+			}
+			j = end
 		}
 	}
 
 	return true
+}
+
+type InsertReq struct {
+	s       *btrdb.Stream
+	dataset []btrdb.RawPoint
+	sid     int
+	sernum  string
+}
+
+func PerformInsert(c chan InsertReq, wg *sync.WaitGroup) {
+	for ir := range c {
+		err := ir.s.Insert(context.Background(), ir.dataset)
+		if err != nil {
+			log.Fatalf("Could not insert stream %v of %v into BTrDB: %v", upmuparser.STREAMS[ir.sid], DescriptorFromSerial(ir.sernum), err)
+		}
+	}
+	wg.Done()
 }

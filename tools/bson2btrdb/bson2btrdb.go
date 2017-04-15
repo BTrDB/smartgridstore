@@ -84,16 +84,35 @@ func main() {
 			log.Fatalf("$NUM_WORKERS must be an integer (got %s)", numworkersstr)
 		}
 	} else {
-		numworkers = runtime.NumCPU() << 6
+		numworkers = runtime.NumCPU()
 		log.Printf("$NUM_WORKERS not set; using %d", numworkers)
 	}
 
+	var numinserters int
+	numinsertersstr := os.Getenv("NUM_INSERTERS")
+	if numinsertersstr != "" {
+		numinserters, err = strconv.Atoi(numinsertersstr)
+		if err != nil {
+			log.Fatalf("$NUM_INSERTERS must be an integer (got %s)", numinsertersstr)
+		}
+	} else {
+		numinserters = numworkers << 6
+		log.Printf("$NUM_INSERTERS not set; using %d", numinserters)
+	}
+
 	reqchan := make(chan dataInsertRequest, numworkers<<1)
+	inschan := make(chan inserter.InsertReq, numinserters<<1)
 
 	var wg sync.WaitGroup
+	var iwg sync.WaitGroup
 	wg.Add(numworkers)
+
 	for i := 0; i != numworkers; i++ {
-		go unmarshalAndProcess(reqchan, bc, &wg)
+		go unmarshalAndProcess(reqchan, inschan, bc, &wg)
+	}
+	iwg.Add(numinserters)
+	for i := 0; i != numinserters; i++ {
+		go inserter.PerformInsert(inschan, &iwg)
 	}
 
 	statefile, err := os.OpenFile(StateFileName, os.O_RDWR|os.O_CREATE, 0655)
@@ -119,6 +138,8 @@ func main() {
 	go periodicallyUpdateStateFile()
 
 	lastProcessed = offset
+
+	fmt.Printf("lastProcessed is %d\n", lastProcessed)
 
 	signals := make(chan os.Signal, 1)
 	done = make(chan struct{})
@@ -178,6 +199,8 @@ processLoop:
 	log.Println("Waiting for remaining files to be processed...")
 	close(reqchan)
 	wg.Wait()
+	close(inschan)
+	iwg.Wait()
 }
 
 func updateStateFile(filename string, off int64) {
@@ -220,13 +243,13 @@ type UpmuDocument struct {
 	Ytag         float64       `bson:"ytag"`
 }
 
-func unmarshalAndProcess(c chan dataInsertRequest, b *btrdb.BTrDB, wg *sync.WaitGroup) {
+func unmarshalAndProcess(c chan dataInsertRequest, ic chan inserter.InsertReq, b *btrdb.BTrDB, wg *sync.WaitGroup) {
 	var doc UpmuDocument
 	for req := range c {
 		doc.SerialNumber = ""
 		bson.Unmarshal(req.data, &doc)
 		if doc.SerialNumber != "" {
-			inserter.ProcessMessage(context.Background(), doc.SerialNumber, doc.Data.Data, b, serialToPath)
+			inserter.ProcessMessage(context.Background(), doc.SerialNumber, doc.Data.Data, b, serialToPath, ic)
 		}
 		bufferPool.Put(req.data)
 
