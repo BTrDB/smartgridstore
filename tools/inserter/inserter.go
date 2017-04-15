@@ -72,9 +72,21 @@ func ProcessMessage(ctx context.Context, sernum string, data []byte, bc *btrdb.B
 			if path == "" {
 				path = serialToPath(ctx, sernum)
 			}
-			s, err = bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, nil)
-			if err != nil {
-				log.Fatalf("Could not create stream in BTrDB: %v", err)
+			created, err2 := bc.Create(ctx, uu, strings.ToLower(path), map[string]string{"name": upmuparser.STREAMS[sid]}, nil)
+			if err2 != nil {
+				if btrdb.ToCodedError(err2).GetCode() == 406 {
+					ex, err3 := s.Exists(ctx)
+					if err3 != nil {
+						log.Fatalf("Could not re-check if stream exists in BTrDB: %v", err)
+					}
+					if !ex {
+						log.Fatalln("Assertion failed: could not create stream, but does not already exist! Maybe another stream with the same UUID but different tags exists?")
+					}
+				} else {
+					log.Fatalf("Could not create stream (UUID = %s, Collection = %s, name = %s) in BTrDB: %v", uu, strings.ToLower(path), upmuparser.STREAMS[sid], err)
+				}
+			} else {
+				s = created
 			}
 		}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -65,6 +66,16 @@ func main() {
 		log.Fatalf("Could not connect to BTrDB: %v", err)
 	}
 
+	/* Check if BTrDB is OK */
+	log.Println("Checking if BTrDB is responsive...")
+	healthctx, healthcancel := context.WithTimeout(context.Background(), 10*time.Second)
+	_, err = bc.Info(healthctx)
+	healthcancel()
+	if err != nil {
+		log.Fatalf("BTrDB is not healthy: %v", err)
+		os.Exit(1)
+	}
+
 	var numworkers int
 	numworkersstr := os.Getenv("NUM_WORKERS")
 	if numworkersstr != "" {
@@ -73,7 +84,7 @@ func main() {
 			log.Fatalf("$NUM_WORKERS must be an integer (got %s)", numworkersstr)
 		}
 	} else {
-		numworkers = runtime.NumCPU() << 3
+		numworkers = runtime.NumCPU() << 6
 		log.Printf("$NUM_WORKERS not set; using %d", numworkers)
 	}
 
@@ -85,7 +96,7 @@ func main() {
 		go unmarshalAndProcess(reqchan, bc, &wg)
 	}
 
-	statefile, err := os.OpenFile(StateFileName, os.O_RDWR|os.O_CREATE, 0755)
+	statefile, err := os.OpenFile(StateFileName, os.O_RDWR|os.O_CREATE, 0655)
 	if err != nil {
 		log.Fatalf("Could not open state file: %v", err)
 	}
@@ -120,11 +131,15 @@ func main() {
 		}
 	}()
 
+	bufferedfile := bufio.NewReaderSize(file, 1024*1024)
+
+processLoop:
 	for {
 		select {
 		case <-done:
 			log.Println("Terminating...")
-			break
+			break processLoop
+		default:
 		}
 
 		var buffer []byte
@@ -136,7 +151,7 @@ func main() {
 		}
 
 		sizebuf := buffer[:4]
-		c, err := io.ReadFull(file, sizebuf)
+		c, err := io.ReadFull(bufferedfile, sizebuf)
 		if c == 0 && err == io.EOF {
 			log.Println("Finished processing file. Terminating...")
 			break
@@ -146,29 +161,27 @@ func main() {
 		}
 
 		size := int32(binary.LittleEndian.Uint32(sizebuf))
-		_, err = io.ReadFull(file, buffer[4:size])
+		_, err = io.ReadFull(bufferedfile, buffer[4:size])
 		if err != nil {
 			log.Printf("Unexpected failure to read from file: %v", err)
 			break
 		}
 
-		off, err := file.Seek(0, io.SeekCurrent)
-		if err != nil {
-			log.Fatalf("Could not get current file position: %v", err)
-		}
+		offset += int64(size)
 
 		reqchan <- dataInsertRequest{
 			data:   buffer,
-			offset: off,
+			offset: offset,
 		}
 	}
 
 	log.Println("Waiting for remaining files to be processed...")
-	wg.Done()
+	close(reqchan)
+	wg.Wait()
 }
 
 func updateStateFile(filename string, off int64) {
-	statefile, err := os.OpenFile(BkupStateFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	statefile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0655)
 	if err != nil {
 		log.Fatalf("Could not open state file: %v", err)
 	}
@@ -185,6 +198,8 @@ func updateStateFile(filename string, off int64) {
 func periodicallyUpdateStateFile() {
 	for {
 		off := atomic.LoadInt64(&lastProcessed)
+
+		log.Printf("Processed %v bytes\n", off)
 
 		/* Maintain two files, in case we crash while writing to one of them... */
 		updateStateFile(StateFileName, off)
