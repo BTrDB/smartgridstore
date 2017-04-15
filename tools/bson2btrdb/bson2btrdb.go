@@ -182,6 +182,10 @@ processLoop:
 		}
 
 		size := int32(binary.LittleEndian.Uint32(sizebuf))
+		if size > int32(len(buffer)) {
+			buffer = make([]byte, size)
+			copy(buffer[:4], sizebuf)
+		}
 		_, err = io.ReadFull(bufferedfile, buffer[4:size])
 		if err != nil {
 			log.Printf("Unexpected failure to read from file: %v", err)
