@@ -88,7 +88,7 @@ func main() {
 		log.Printf("$NUM_WORKERS not set; using %d", numworkers)
 	}
 
-	reqchan := make(chan dataInsertRequest, numworkers<<2)
+	reqchan := make(chan dataInsertRequest, numworkers<<1)
 
 	var wg sync.WaitGroup
 	wg.Add(numworkers)
