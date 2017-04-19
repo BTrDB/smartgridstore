@@ -16,6 +16,7 @@ import (
 	"github.com/SoftwareDefinedBuildings/btrdb/bte"
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/immesys/smartgridstore/tools"
 	"github.com/immesys/smartgridstore/tools/manifest"
 	"github.com/immesys/smartgridstore/tools/upmuparser"
 	"gopkg.in/btrdb.v4"
@@ -23,9 +24,9 @@ import (
 	uuid "github.com/pborman/uuid"
 )
 
-const VersionMajor = 4
-const VersionMinor = 4
-const VersionPatch = 5
+const VersionMajor = tools.VersionMajor
+const VersionMinor = tools.VersionMinor
+const VersionPatch = tools.VersionPatch
 
 var btrdbconn *btrdb.BTrDB
 var ytagbase int = 0

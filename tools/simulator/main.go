@@ -9,11 +9,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/immesys/smartgridstore/tools"
 )
 
-const VersionMajor = 4
-const VersionMinor = 4
-const VersionPatch = 5
+const VersionMajor = tools.VersionMajor
+const VersionMinor = tools.VersionMinor
+const VersionPatch = tools.VersionPatch
 
 var sent int64
 

@@ -1,6 +1,6 @@
 FROM ubuntu:xenial
 
-ENV ETCDCTL_VERSION v3.1.3
+ENV ETCDCTL_VERSION v3.1.5
 ENV ETCDCTL_ARCH linux-amd64
 
 RUN apt-get update && apt-get install -y wget && \

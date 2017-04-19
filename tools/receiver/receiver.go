@@ -12,13 +12,14 @@ import (
 	"time"
 
 	"github.com/ceph/go-ceph/rados"
+	"github.com/immesys/smartgridstore/tools"
 
 	logging "github.com/op/go-logging"
 )
 
-const VersionMajor = 4
-const VersionMinor = 4
-const VersionPatch = 5
+const VersionMajor = tools.VersionMajor
+const VersionMinor = tools.VersionMinor
+const VersionPatch = tools.VersionPatch
 
 var logger *logging.Logger
 

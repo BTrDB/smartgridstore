@@ -9,16 +9,18 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"runtime"
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/immesys/smartgridstore/tools"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh"
 )
 
-const VersionMajor = 4
-const VersionMinor = 4
-const VersionPatch = 5
+const VersionMajor = tools.VersionMajor
+const VersionMinor = tools.VersionMinor
+const VersionPatch = tools.VersionPatch
 
 var etcdClient *etcd.Client
 
@@ -89,6 +91,12 @@ func main() {
 	}
 	checkBootstrapPassword()
 
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			fmt.Printf("num goroutines: %d\n", runtime.NumGoroutine())
+		}
+	}()
 	config := &ssh.ServerConfig{
 		PasswordCallback: passwordAuth,
 	}
@@ -117,19 +125,20 @@ func main() {
 			log.Printf("Failed to accept incoming connection (%s)", err)
 			continue
 		}
+		go func() {
+			// Before use, a handshake must be performed on the incoming net.Conn.
+			sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
+			if err != nil {
+				log.Printf("Failed to handshake (%s)", err)
+				return
+			}
 
-		// Before use, a handshake must be performed on the incoming net.Conn.
-		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
-		if err != nil {
-			log.Printf("Failed to handshake (%s)", err)
-			continue
-		}
-
-		log.Printf("New admin console connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
-		// Discard all global out-of-band Requests
-		go ssh.DiscardRequests(reqs)
-		// Accept all channels
-		go handleChannels(chans, sshConn.User(), sshConn.RemoteAddr().String())
+			log.Printf("New admin console connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
+			// Discard all global out-of-band Requests
+			go ssh.DiscardRequests(reqs)
+			// Accept all channels
+			go handleChannels(chans, sshConn.User(), sshConn.RemoteAddr().String())
+		}()
 	}
 }
 
