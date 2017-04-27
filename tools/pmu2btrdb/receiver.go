@@ -17,9 +17,6 @@ import (
 	btrdb "gopkg.in/btrdb.v4"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools/manifest"
-
-	"github.com/immesys/smartgridstore/tools/inserter"
 )
 
 const VersionMajor = 4
@@ -40,37 +37,9 @@ const (
 	TIMEOUTSECS           = 30
 )
 
-var bc *btrdb.BTrDB
-var ec *etcd.Client
-
 var MaxConcurrentInserts int64 = 1024
 
 var insertionSemaphore chan struct{}
-
-func serialToPath(ctx context.Context, sernum string) string {
-	desc := inserter.DescriptorFromSerial(sernum)
-
-	var dev *manifest.ManifestDevice
-	dev, err := manifest.RetrieveManifestDevice(ctx, ec, desc)
-	if err != nil {
-		log.Fatalf("Could not check for device path in etcd: %v", err)
-	}
-
-	var path string
-	if dev != nil {
-		var ok bool
-		path, ok = dev.Metadata["path"]
-		if !ok {
-			log.Printf("Device %v is missing the path metadata; falling back to descriptor", desc)
-			path = desc
-		}
-	} else {
-		log.Printf("No manifest device info for %v was found; falling back to descriptor", desc)
-		path = desc
-	}
-
-	return path
-}
 
 func roundUp4(x uint32) uint32 {
 	return (x + 3) & 0xFFFFFFFC
@@ -296,7 +265,7 @@ func handlePMUConn(conn *net.TCPConn) {
 						updateStats(&queueing, uint64(time.Since(queuestart)))
 
 						processstart := time.Now()
-						success := inserter.ProcessMessage(context.TODO(), sernum, dtbuffer[:lendt], bc, serialToPath)
+						success := processMessage(context.TODO(), sernum, dtbuffer[:lendt])
 						resp := sendid
 						if !success {
 							resp = FAILUREMSG
