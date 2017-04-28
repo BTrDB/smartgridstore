@@ -17,11 +17,12 @@ import (
 	btrdb "gopkg.in/btrdb.v4"
 
 	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/immesys/smartgridstore/tools"
 )
 
-const VersionMajor = 4
-const VersionMinor = 4
-const VersionPatch = 5
+const VersionMajor = tools.VersionMajor
+const VersionMinor = tools.VersionMinor
+const VersionPatch = tools.VersionPatch
 
 var FAILUREMSG = make([]byte, 4, 4)
 
