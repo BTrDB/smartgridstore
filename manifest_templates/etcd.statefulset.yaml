@@ -49,7 +49,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: btrdb/etcd:3.1.3
+        image: btrdb/etcd:3.1.7
         imagePullPolicy: Always
         ports:
         - containerPort: 2379
@@ -86,7 +86,7 @@ spec:
     spec:
       containers:
       - name: backup
-        image: btrdb/etcd:3.1.3
+        image: btrdb/etcd:3.1.7
         args:
         - backup
         imagePullPolicy: Always

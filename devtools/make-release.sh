@@ -10,6 +10,7 @@ pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/btrdbd
 go build
 btrdb_ver=`./btrdbd -version`
 echo "BTrDB version is $btrdb_ver"
+
 target_ver=$btrdb_ver
 popd
 
@@ -99,7 +100,7 @@ pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/mr-plotter/container
 cp ../mr-plotter .
 cp ../tools/hardcodecert/hardcodecert .
 cp ../tools/setsessionkeys/setsessionkeys .
-docker build -t btrdb/${PFX}mrplotter:$target_ver .
+docker build --no-cache -t btrdb/${PFX}mrplotter:$target_ver .
 docker push btrdb/${PFX}mrplotter:$target_ver
 popd
 

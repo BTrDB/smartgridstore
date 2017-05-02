@@ -36,7 +36,7 @@ spec:
           requests:
             cpu: "10"
             # changing this memory limit will not change how much memory
-            # btrdb tries to use. That feature will come later
+            # btrdb tries to use. That is tweaked by BLOCK_CACHE below
             memory: 32Gi
         env:
           - name: ETCD_ENDPOINT
@@ -45,6 +45,10 @@ spec:
             value: {{.SiteInfo.Ceph.BTrDBPool}}
           - name: CEPH_DATA_POOL
             value: {{.SiteInfo.Ceph.BTrDBPool}}
+          - name: BTRDB_BLOCK_CACHE
+            value: "1000000"
+          - name: BTRDB_ENABLE_OVERWATCH
+            value: "yes"
           - name: MY_POD_NAME
             valueFrom:
               fieldRef:
