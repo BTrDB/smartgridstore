@@ -249,11 +249,15 @@ func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser
 			feedback <- 0
 		} else {
 			fmt.Printf("Error inserting data: %v\n", err)
-			if btrdb.ToCodedError(err).Code != bte.ResourceDepleted {
+			switch btrdb.ToCodedError(err).Code {
+			case bte.ResourceDepleted:
 				done = false
 				time.Sleep(5 * time.Second)
+			case bte.BadValue:
+				feedback <- 0
+			default:
+				feedback <- 1
 			}
-			feedback <- 1
 		}
 	}
 }
