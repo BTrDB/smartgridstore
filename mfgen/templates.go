@@ -2,6 +2,7 @@
 // sources:
 // ../manifest_templates/adminconsole.deployment.yaml
 // ../manifest_templates/btrdb.statefulset.yaml
+// ../manifest_templates/c37ingress.deployment.yaml
 // ../manifest_templates/create_admin_key.sh
 // ../manifest_templates/createdb.job.yaml
 // ../manifest_templates/etcd.statefulset.yaml
@@ -91,7 +92,7 @@ func adminconsoleDeploymentYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "adminconsole.deployment.yaml", size: 1245, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "adminconsole.deployment.yaml", size: 1245, mode: os.FileMode(436), modTime: time.Unix(1487551353, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -111,7 +112,27 @@ func btrdbStatefulsetYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "btrdb.statefulset.yaml", size: 1905, mode: os.FileMode(436), modTime: time.Unix(1493764858, 0)}
+	info := bindataFileInfo{name: "btrdb.statefulset.yaml", size: 1905, mode: os.FileMode(436), modTime: time.Unix(1497228902, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _c37ingressDeploymentYaml = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x90\xcf\x6a\xc3\x30\x0c\x87\xef\x7e\x0a\xc1\xce\x4d\x96\xb5\x50\xa6\x63\x9b\x32\x0a\xa3\x0b\x5b\xd8\x75\x28\x89\xd6\x99\x39\x8e\xb1\xd5\xd2\x62\xf2\xee\x23\x63\xfd\x13\x56\x9d\x6c\x7f\xfe\x7d\x96\x7c\x07\x31\x42\xf2\xc4\xf6\x59\x5b\x86\xbe\x57\xe4\xf4\x3b\xfb\xa0\x3b\x8b\xc0\x07\x61\x3b\x2c\x43\xba\xcf\x2a\x16\xca\xd4\xb7\xb6\x0d\x42\xce\xce\x74\xc7\x96\xad\xa8\x96\x85\x1a\x12\x42\x05\x60\xa9\x65\x84\x7a\x3a\xd7\x76\xeb\x39\x04\x15\x1c\xd7\x03\xf0\xec\x8c\xae\x29\x20\x64\x0a\x40\xb8\x75\x86\x84\x07\x02\x70\x2d\x18\xca\x50\xc5\x26\x9c\x76\x00\xe4\xdc\xc8\x39\x9c\x9d\xbc\x43\xd5\x9d\x15\xd2\x96\xfd\x39\x33\xf9\xdf\xc8\x49\xa6\x5b\xda\x32\x42\x25\xbe\xa9\xd2\x18\x93\xe2\xf3\xd0\xf7\x97\x7b\x18\x63\x52\x92\xdf\xb2\xfc\xfd\x41\xdf\x8f\xa3\xc5\xce\x98\xa2\x33\xba\x3e\x22\xc4\x98\x2c\xcf\x6f\x27\xeb\x31\xbe\x0a\xb2\xdd\x5f\xa6\xb9\x74\xb7\x2a\x97\xf9\xc7\x6a\x93\x17\x2f\xeb\x4d\x79\xc5\x01\xf6\x64\x76\x8c\xf0\x25\xe2\x30\x4d\x59\xea\x06\x1f\xa6\xf3\xc7\x1b\x8e\x45\xf9\x9a\x2f\xce\x92\xb7\x5b\x96\xdf\x51\x27\x55\xd7\x49\x10\x4f\x0e\x67\xb3\xec\x5e\xfd\x04\x00\x00\xff\xff\xb8\xea\x47\x81\xf6\x01\x00\x00")
+
+func c37ingressDeploymentYamlBytes() ([]byte, error) {
+	return bindataRead(
+		_c37ingressDeploymentYaml,
+		"c37ingress.deployment.yaml",
+	)
+}
+
+func c37ingressDeploymentYaml() (*asset, error) {
+	bytes, err := c37ingressDeploymentYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "c37ingress.deployment.yaml", size: 502, mode: os.FileMode(436), modTime: time.Unix(1497232064, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -131,7 +152,7 @@ func create_admin_keySh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "create_admin_key.sh", size: 223, mode: os.FileMode(436), modTime: time.Unix(1488387354, 0)}
+	info := bindataFileInfo{name: "create_admin_key.sh", size: 223, mode: os.FileMode(436), modTime: time.Unix(1487468500, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -151,7 +172,7 @@ func createdbJobYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "createdb.job.yaml", size: 1047, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "createdb.job.yaml", size: 1047, mode: os.FileMode(436), modTime: time.Unix(1487551375, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -171,7 +192,7 @@ func etcdStatefulsetYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "etcd.statefulset.yaml", size: 2548, mode: os.FileMode(436), modTime: time.Unix(1493763931, 0)}
+	info := bindataFileInfo{name: "etcd.statefulset.yaml", size: 2548, mode: os.FileMode(436), modTime: time.Unix(1497228902, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -191,7 +212,7 @@ func ingesterDeploymentYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "ingester.deployment.yaml", size: 799, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "ingester.deployment.yaml", size: 799, mode: os.FileMode(436), modTime: time.Unix(1487551387, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -211,7 +232,7 @@ func mrplotterDeploymentYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "mrplotter.deployment.yaml", size: 1077, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "mrplotter.deployment.yaml", size: 1077, mode: os.FileMode(436), modTime: time.Unix(1487551391, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -231,7 +252,7 @@ func pmu2btrdbDeploymentYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "pmu2btrdb.deployment.yaml", size: 926, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "pmu2btrdb.deployment.yaml", size: 926, mode: os.FileMode(436), modTime: time.Unix(1487551394, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -251,7 +272,7 @@ func receiverDeploymentYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "receiver.deployment.yaml", size: 1394, mode: os.FileMode(436), modTime: time.Unix(1488387869, 0)}
+	info := bindataFileInfo{name: "receiver.deployment.yaml", size: 1394, mode: os.FileMode(436), modTime: time.Unix(1487551397, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -310,6 +331,7 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"adminconsole.deployment.yaml": adminconsoleDeploymentYaml,
 	"btrdb.statefulset.yaml": btrdbStatefulsetYaml,
+	"c37ingress.deployment.yaml": c37ingressDeploymentYaml,
 	"create_admin_key.sh": create_admin_keySh,
 	"createdb.job.yaml": createdbJobYaml,
 	"etcd.statefulset.yaml": etcdStatefulsetYaml,
@@ -361,6 +383,7 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"adminconsole.deployment.yaml": &bintree{adminconsoleDeploymentYaml, map[string]*bintree{}},
 	"btrdb.statefulset.yaml": &bintree{btrdbStatefulsetYaml, map[string]*bintree{}},
+	"c37ingress.deployment.yaml": &bintree{c37ingressDeploymentYaml, map[string]*bintree{}},
 	"create_admin_key.sh": &bintree{create_admin_keySh, map[string]*bintree{}},
 	"createdb.job.yaml": &bintree{createdbJobYaml, map[string]*bintree{}},
 	"etcd.statefulset.yaml": &bintree{etcdStatefulsetYaml, map[string]*bintree{}},
