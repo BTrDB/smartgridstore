@@ -226,7 +226,7 @@ func periodicallyUpdateStateFile() {
 	for {
 		off := atomic.LoadInt64(&lastProcessed)
 
-		log.Printf("Processed %v bytes\n", off)
+		log.Printf("Processed %.3f GB of %s\n", float64(off/1024)/1024.0/1024.0, os.Args[1])
 
 		/* Maintain two files, in case we crash while writing to one of them... */
 		updateStateFile(StateFileName, off)
