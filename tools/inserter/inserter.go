@@ -122,7 +122,7 @@ func PerformInsert(c chan InsertReq, wg *sync.WaitGroup) {
 	for ir := range c {
 		err := ir.s.Insert(context.Background(), ir.dataset)
 		if err != nil {
-			log.Fatalf("Could not insert stream %v of %v into BTrDB: %v", upmuparser.STREAMS[ir.sid], DescriptorFromSerial(ir.sernum), err)
+			fmt.Printf("Could not insert stream %v of %v into BTrDB: %v\n", upmuparser.STREAMS[ir.sid], DescriptorFromSerial(ir.sernum), err)
 		}
 	}
 	wg.Done()

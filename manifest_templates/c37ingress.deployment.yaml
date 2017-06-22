@@ -1,0 +1,21 @@
+# {{ .GenLine }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: c37ingress
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: c37ingress
+    spec:
+      containers:
+      - name: c37ingress
+        image: btrdb/{{.Pfx}}c37ingress:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd:2379
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
