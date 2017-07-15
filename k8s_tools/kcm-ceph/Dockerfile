@@ -2,8 +2,8 @@ FROM ubuntu:xenial
 
 ENV ETCDCTL_VERSION v3.1.7
 ENV ETCDCTL_ARCH linux-amd64
-ENV CEPH_VERSION jewel
-ENV KUBE_VERSION v1.6.6
+ENV CEPH_VERSION luminous
+ENV KUBE_VERSION v1.7.0
 ENV GO_VERSION 1.8.1
 RUN apt-get update && apt-get install -y net-tools git build-essential wget
 RUN wget -q -O- 'https://download.ceph.com/keys/release.asc' | apt-key add - && \

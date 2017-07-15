@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y net-tools git build-essential vim wget 
     ENV GOTRACEBACK=all
     RUN go get github.com/maruel/panicparse/cmd/pp
     WORKDIR /srv/go
-ADD entrypoint.sh
-RUN chmod a+x entrypoint.sh /bin/entrypoint.sh
+ADD entrypoint.sh /bin/
+RUN chmod a+x /bin/entrypoint.sh
+RUN apt-get install -y byobu iputils-ping dns-utils curl silversearcher-ag
 ENTRYPOINT ["/bin/entrypoint.sh"]
