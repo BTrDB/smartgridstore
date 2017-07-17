@@ -1,0 +1,15 @@
+# {{ .GenLine }}
+apiVersion: "etcd.coreos.com/v1beta1"
+kind: "Cluster"
+metadata:
+  name: "etcd"
+  namespace: {{.TargetNamespace}}
+spec:
+  size: 3
+  version: "3.1.8"
+  backup:
+    backupIntervalInSecond: 2000
+    maxBackups: 30
+    storageType: "PersistentVolume"
+    pv:
+      volumeSizeInMB: 200000
