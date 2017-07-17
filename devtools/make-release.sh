@@ -4,7 +4,7 @@ echo "determining version"
 
 set -ex
 
-PFX="dev-"
+PFX=""
 
 pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/btrdbd
 go build
@@ -118,8 +118,8 @@ popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/c37ingress
 cp ../../tools/c37ingress/c37ingress .
-docker build -t btrdb/${PFX}c37ingres:$target_ver .
-docker push btrdb/${PFX}c37ingress:$tarsget_ver
+docker build -t btrdb/${PFX}c37ingress:$target_ver .
+docker push btrdb/${PFX}c37ingress:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/receiver

@@ -13,3 +13,14 @@ spec:
     storageType: "PersistentVolume"
     pv:
       volumeSizeInMB: 200000
+  pod:
+    etcdenv:
+    - name: ETCD_AUTO_COMPACTION_RETENTION
+      value: "1"
+    - name: ETCD_QUOTA_BACKEND_BYTES
+      value: "8589934592"
+  #if you have had a catastrophic failure and are trying to restore a previous
+  #backup into a new cluster, uncomment this. The PV must still exist
+  #restore:
+  #  backupClusterName: "etcd"
+  #  storageType: "PersistentVolume"
