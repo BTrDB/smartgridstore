@@ -3,6 +3,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: pmu2btrdb
+  namespace: {{.TargetNamespace}}
 spec:
   replicas: 4
   template:
@@ -30,6 +31,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: pmu2btrdb
+  namespace: {{.TargetNamespace}}
   labels:
     app: pmu2btrdb
 spec:

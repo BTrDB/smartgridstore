@@ -5,6 +5,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: btrdb-createdb
+  namespace: {{.TargetNamespace}}
 spec:
   template:
     metadata:
@@ -17,12 +18,16 @@ spec:
         imagePullPolicy: {{.Containers.ImagePullPolicy}}
         args: [ "makedb" ]
         env:
-          - name: ETCD_ENDPOINT
-            value: http://etcd:2379
+          - name: ETCD_ENDPOINT_0
+            value: http://etcd-0000.etcd:2379
+          - name: ETCD_ENDPOINT_1
+            value: http://etcd-0001.etcd:2379
+          - name: ETCD_ENDPOINT_2
+            value: http://etcd-0002.etcd:2379
           - name: CEPH_HOT_POOL
-            value: {{.SiteInfo.Ceph.BTrDBPool}}
+            value: {{.SiteInfo.Ceph.BTrDBHotPool}}
           - name: CEPH_DATA_POOL
-            value: {{.SiteInfo.Ceph.BTrDBPool}}
+            value: {{.SiteInfo.Ceph.BTrDBDataPool}}
           - name: MY_POD_NAME
             valueFrom:
               fieldRef:

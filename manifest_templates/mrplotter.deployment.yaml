@@ -3,8 +3,9 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: mrplotter
+  namespace: {{.TargetNamespace}}
 spec:
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
@@ -36,6 +37,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mrplotter
+  namespace: {{.TargetNamespace}}
   labels:
     app: mrplotter
 spec:

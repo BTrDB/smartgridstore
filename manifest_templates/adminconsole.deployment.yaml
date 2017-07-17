@@ -3,6 +3,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: console
+  namespace: {{.TargetNamespace}}
 spec:
   replicas: 1
   template:
@@ -16,7 +17,7 @@ spec:
         imagePullPolicy: {{.Containers.ImagePullPolicy}}
         env:
           - name: ETCD_ENDPOINT
-            value: http://etcd:2379
+            value: http://etcd-client:2379
           - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410
         volumeMounts:
@@ -42,6 +43,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: console
+  namespace: {{.TargetNamespace}}
   labels:
     app: console
 spec:

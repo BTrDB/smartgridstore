@@ -7,38 +7,51 @@ import (
 )
 
 type SiteConfig struct {
-	ApiVersion string `yaml:"apiVersion"`
-	Containers struct {
+	ApiVersion      string `yaml:"apiVersion"`
+	TargetNamespace string `yaml:"targetNamespace"`
+	Containers      struct {
 		Channel         string `yaml:"channel"`
 		ImagePullPolicy string `yaml:"imagePullPolicy"`
 	} `yaml:"containers"`
 	SiteInfo struct {
 		Ceph struct {
-			StagingPool string `yaml:"stagingPool"`
-			BTrDBPool   string `yaml:"btrdbPool"`
-			RBDPool     string `yaml:"rbdPool"`
+			StagingPool   string `yaml:"stagingPool"`
+			BTrDBDataPool string `yaml:"btrdbDataPool"`
+			BTrDBHotPool  string `yaml:"btrdbHotPool"`
+			RBDPool       string `yaml:"rbdPool"`
 		} `yaml:"ceph"`
 		ExternalIPs []string `yaml:"externalIPs"`
 	} `yaml:"siteInfo"`
-	Misc struct {
-		AvoidStorageClass bool `yaml:"avoidStorageClass"`
-	} `yaml:"misc"`
 }
 
 const DefaultSiteConfig = `apiVersion: smartgrid.store/v1
 kind: SiteConfig
+# this is the kubernetes namespace that you are deploying into
+targetNamespace: sgs
 containers:
+  #this can be 'development'
   channel: release
   imagePullPolicy: Always
 siteInfo:
   ceph:
+    # the staging pool is where ingress daemons stage data. It can be
+    # ignored if you are not using ingress daemons
     stagingPool: staging
-    btrdbPool: btrdb
+
+    # the btrdb data pool (or cold pool) is where most of the data
+    # is stored. It is typically large and backed by spinning metal drives
+    btrdbDataPool: btrdb_data
+    # the btrdb hot pool is used for more performance-sensitive
+    # data. It can be smaller and is usually backed by SSDs
+    btrdbHotPool: btrdb_hot
+    # the RBD pool is used to provision persistent storage for
+    # kubernetes pods. It can use spinning metal.
     rbdPool: rbd
+
+  # the external IPs listed here are where the services can be contacted
+  # e.g for the plotter or the BTrDB API
   externalIPs:
   - 123.123.123.1
-misc:
-  avoidStorageClass: false
 `
 
 func LoadSiteConfig(filename string) (*SiteConfig, error) {

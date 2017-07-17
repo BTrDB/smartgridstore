@@ -4,6 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: btrdb
+  namespace: {{.TargetNamespace}}
   labels:
     app: btrdb
 spec:
@@ -20,6 +21,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: btrdb
+  namespace: {{.TargetNamespace}}
 spec:
   serviceName: "btrdb"
   replicas: 1
@@ -39,12 +41,16 @@ spec:
             # btrdb tries to use. That is tweaked by BLOCK_CACHE below
             memory: 32Gi
         env:
-          - name: ETCD_ENDPOINT
-            value: http://etcd:2379
+          - name: ETCD_ENDPOINT_0
+            value: http://etcd-0000.etcd:2379
+          - name: ETCD_ENDPOINT_1
+            value: http://etcd-0001.etcd:2379
+          - name: ETCD_ENDPOINT_2
+            value: http://etcd-0002.etcd:2379
           - name: CEPH_HOT_POOL
-            value: {{.SiteInfo.Ceph.BTrDBPool}}
+            value: {{.SiteInfo.Ceph.BTrDBHotPool}}
           - name: CEPH_DATA_POOL
-            value: {{.SiteInfo.Ceph.BTrDBPool}}
+            value: {{.SiteInfo.Ceph.BTrDBDataPool}}
           - name: BTRDB_BLOCK_CACHE
             value: "1000000"
           - name: BTRDB_ENABLE_OVERWATCH
@@ -75,6 +81,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: btrdb-bootstrap
+  namespace: {{.TargetNamespace}}
   labels:
     app: btrdb
 spec:
