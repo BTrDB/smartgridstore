@@ -1,24 +1,22 @@
 # {{ .GenLine }}
-#this creates the database in ceph. If you run this when there is an
-#existing database, you will have a bad time.
-# DO NOT USE THIS FOR MIGRATING AN EXISTING DATABASE
+# this migrates from a single pool BTrDB to a tiered storage BTrDB
+# it does not move the old data, but new data will be properly tiered.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: btrdb-createdb
+  name: btrdb-ensuredb
   namespace: {{.TargetNamespace}}
 spec:
   template:
     metadata:
-      name: btrdb-createdb
+      name: btrdb-ensuredb
     spec:
       restartPolicy: Never
       containers:
-      - name: btrdb-createdb
-        iKnowWhatIAmDoing: delete this line if you really want to use this file
+      - name: btrdb-ensuredb
         image: btrdb/{{.Pfx}}db:{{.TargetVersion}}
         imagePullPolicy: {{.Containers.ImagePullPolicy}}
-        args: [ "makedb" ]
+        args: [ "ensuredb" ]
         env:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379

@@ -17,6 +17,7 @@ var Manifest []*ManifestEntry = []*ManifestEntry{
 	&ManifestEntry{Yep, "READMEFIRST.md", TemplateProcess("readme.md", "")},
 	&ManifestEntry{Yep, "adminconsole.deployment.yaml", TemplateProcess("adminconsole.deployment.yaml", "core")},
 	&ManifestEntry{Yep, "createdb.job.yaml", TemplateProcess("createdb.job.yaml", "core")},
+	&ManifestEntry{Yep, "ensuredb.job.yaml", TemplateProcess("ensuredb.job.yaml", "core")},
 	&ManifestEntry{Yep, "btrdb.statefulset.yaml", TemplateProcess("btrdb.statefulset.yaml", "core")},
 	&ManifestEntry{Yep, "create_admin_key.sh", TemplateProcess("create_admin_key.sh", "core")},
 	&ManifestEntry{Yep, "c37ingress.deployment.yaml", TemplateProcess("c37ingress.deployment.yaml", "ingress")},
