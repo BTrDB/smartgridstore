@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	btrdbcli "github.com/SoftwareDefinedBuildings/btrdb/cliplugin"
-	"github.com/SoftwareDefinedBuildings/mr-plotter/accounts"
+	btrdbcli "github.com/BTrDB/btrdb-server/cliplugin"
+	"github.com/BTrDB/mr-plotter/accounts"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/acl"
 	"github.com/immesys/smartgridstore/admincli"

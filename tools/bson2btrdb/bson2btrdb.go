@@ -18,7 +18,7 @@ import (
 
 	"github.com/immesys/smartgridstore/tools/inserter"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 	"gopkg.in/ini.v1"
 	"gopkg.in/mgo.v2/bson"
 )

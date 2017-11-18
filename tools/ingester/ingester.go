@@ -13,13 +13,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/SoftwareDefinedBuildings/btrdb/bte"
+	"github.com/BTrDB/btrdb-server/bte"
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/tools"
 	"github.com/immesys/smartgridstore/tools/manifest"
 	"github.com/immesys/smartgridstore/tools/upmuparser"
-	"gopkg.in/btrdb.v4"
+	"gopkg.in/BTrDB/btrdb.v4"
 
 	uuid "github.com/pborman/uuid"
 )

@@ -6,7 +6,7 @@ set -ex
 
 PFX=""
 
-pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/btrdbd
+pushd $GOPATH/src/github.com/BTrDB/btrdb-server/btrdbd
 go build
 btrdb_ver=`./btrdbd -version`
 echo "BTrDB version is $btrdb_ver"
@@ -14,7 +14,7 @@ echo "BTrDB version is $btrdb_ver"
 target_ver=$btrdb_ver
 popd
 
-pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/mr-plotter
+pushd $GOPATH/src/github.com/BTrDB/mr-plotter
 go get -u ./...
 go build
 mrp_ver=`./mr-plotter -version`
@@ -90,13 +90,13 @@ popd
 echo "All versions match $target_ver, building and pushing containers"
 set -e
 
-pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/btrdb/k8scontainer
+pushd $GOPATH/src/github.com/BTrDB/btrdb-server/k8scontainer
 cp ../btrdbd/btrdbd .
 docker build -t btrdb/${PFX}db:$target_ver .
 docker push btrdb/${PFX}db:$target_ver
 popd
 
-pushd $GOPATH/src/github.com/SoftwareDefinedBuildings/mr-plotter/container
+pushd $GOPATH/src/github.com/BTrDB/mr-plotter/container
 cp ../mr-plotter .
 cp ../tools/hardcodecert/hardcodecert .
 cp ../tools/setsessionkeys/setsessionkeys .

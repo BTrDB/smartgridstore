@@ -11,7 +11,7 @@ import (
 	"github.com/immesys/smartgridstore/tools/upmuparser"
 	"github.com/pborman/uuid"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 // UpmuSpaceString is UpmuSpace as a human-readable string

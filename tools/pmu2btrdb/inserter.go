@@ -12,7 +12,7 @@ import (
 	"github.com/immesys/smartgridstore/tools/upmuparser"
 	"github.com/pborman/uuid"
 
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 const UpmuSpaceString = "c9bbebff-ff40-4dbe-987e-f9e96afb7a57"

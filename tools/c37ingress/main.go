@@ -12,7 +12,7 @@ import (
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/immesys/smartgridstore/tools"
 	"github.com/immesys/smartgridstore/tools/manifest"
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
 func main() {
