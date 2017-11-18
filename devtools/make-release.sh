@@ -87,13 +87,12 @@ then
 fi
 popd
 
-echo "All versions match $target_ver, building and pushing containers"
+echo "All versions match $target_ver, building containers"
 set -e
 
 pushd $GOPATH/src/github.com/BTrDB/btrdb-server/k8scontainer
 cp ../btrdbd/btrdbd .
 docker build -t btrdb/${PFX}db:$target_ver .
-docker push btrdb/${PFX}db:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/mr-plotter/container
@@ -101,44 +100,48 @@ cp ../mr-plotter .
 cp ../tools/hardcodecert/hardcodecert .
 cp ../tools/setsessionkeys/setsessionkeys .
 docker build --no-cache -t btrdb/${PFX}mrplotter:$target_ver .
-docker push btrdb/${PFX}mrplotter:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/adminconsole
 cp ../../tools/admincliserver/admincliserver .
 docker build -t  btrdb/${PFX}console:$target_ver .
-docker push btrdb/${PFX}console:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/ingester
 cp ../../tools/ingester/ingester .
 docker build -t btrdb/${PFX}ingester:$target_ver .
-docker push btrdb/${PFX}ingester:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/c37ingress
 cp ../../tools/c37ingress/c37ingress .
 docker build -t btrdb/${PFX}c37ingress:$target_ver .
-docker push btrdb/${PFX}c37ingress:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/receiver
 cp ../../tools/receiver/receiver .
 docker build -t btrdb/${PFX}receiver:$target_ver .
-docker push btrdb/${PFX}receiver:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/pmu2btrdb
 cp ../../tools/pmu2btrdb/pmu2btrdb .
 docker build -t btrdb/${PFX}pmu2btrdb:$target_ver .
-docker push btrdb/${PFX}pmu2btrdb:$target_ver
 popd
 
 pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/simulator
 cp ../../tools/simulator/simulator .
 docker build -t btrdb/${PFX}simulator:$target_ver .
-docker push btrdb/${PFX}simulator:$target_ver
 popd
+
+echo "All containers built ok for $PFX-$target_ver , pushing containers"
+
+docker push btrdb/${PFX}mrplotter:$target_ver
+docker push btrdb/${PFX}console:$target_ver
+docker push btrdb/${PFX}ingester:$target_ver
+docker push btrdb/${PFX}c37ingress:$target_ver
+docker push btrdb/${PFX}receiver:$target_ver
+docker push btrdb/${PFX}pmu2btrdb:$target_ver
+docker push btrdb/${PFX}simulator:$target_ver
+docker push btrdb/${PFX}db:$target_ver
 
 echo "DONE!"
 echo "Release ${PFX}$target_ver is published"
