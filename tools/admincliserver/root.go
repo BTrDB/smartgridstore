@@ -10,7 +10,7 @@ import (
 	"github.com/BTrDB/smartgridstore/acl"
 	"github.com/BTrDB/smartgridstore/admincli"
 	mfst "github.com/BTrDB/smartgridstore/tools/manifest/cli"
-	mrplotterconf "github.com/samkumar/mr-plotter-conf/cli"
+	mrplotterconf "github.com/BTrDB/smartgridstore/tools/mr-plotter-conf/cli"
 )
 
 func GetRootModule(c *etcd.Client, user string) admincli.CLIModule {
