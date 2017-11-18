@@ -13,7 +13,7 @@ import (
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh"
 )

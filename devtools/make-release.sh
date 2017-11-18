@@ -32,7 +32,7 @@ popd
 
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/tools/admincliserver
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/admincliserver
 go get -u ./...
 go build
 cli_ver=`./admincliserver -version`
@@ -43,7 +43,7 @@ then
 fi
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/tools/ingester
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/ingester
 go get -u ./...
 go build
 ing_ver=`./ingester -version`
@@ -54,7 +54,7 @@ then
 fi
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/tools/receiver
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/receiver
 go get -u ./...
 go build
 rec_ver=`./receiver -version`
@@ -65,7 +65,7 @@ then
 fi
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/tools/pmu2btrdb
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/pmu2btrdb
 go get -u ./...
 go build
 pmu2btrdb_ver=`./pmu2btrdb -version`
@@ -76,7 +76,7 @@ then
 fi
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/tools/simulator
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/simulator
 go get -u ./...
 go build
 simulator_ver=`./simulator -version`
@@ -102,32 +102,32 @@ cp ../tools/setsessionkeys/setsessionkeys .
 docker build --no-cache -t btrdb/${PFX}mrplotter:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/adminconsole
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/adminconsole
 cp ../../tools/admincliserver/admincliserver .
 docker build -t  btrdb/${PFX}console:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/ingester
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/ingester
 cp ../../tools/ingester/ingester .
 docker build -t btrdb/${PFX}ingester:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/c37ingress
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/c37ingress
 cp ../../tools/c37ingress/c37ingress .
 docker build -t btrdb/${PFX}c37ingress:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/receiver
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/receiver
 cp ../../tools/receiver/receiver .
 docker build -t btrdb/${PFX}receiver:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/pmu2btrdb
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/pmu2btrdb
 cp ../../tools/pmu2btrdb/pmu2btrdb .
 docker build -t btrdb/${PFX}pmu2btrdb:$target_ver .
 popd
 
-pushd $GOPATH/src/github.com/immesys/smartgridstore/containers/simulator
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/simulator
 cp ../../tools/simulator/simulator .
 docker build -t btrdb/${PFX}simulator:$target_ver .
 popd

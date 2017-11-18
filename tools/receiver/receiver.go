@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/ceph/go-ceph/rados"
-	"github.com/immesys/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools"
 
 	logging "github.com/op/go-logging"
 )

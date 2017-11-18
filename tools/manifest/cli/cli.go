@@ -37,8 +37,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/immesys/smartgridstore/admincli"
-	"github.com/immesys/smartgridstore/tools/manifest"
+	"github.com/BTrDB/smartgridstore/admincli"
+	"github.com/BTrDB/smartgridstore/tools/manifest"
 
 	etcd "github.com/coreos/etcd/clientv3"
 )

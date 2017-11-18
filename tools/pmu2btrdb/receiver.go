@@ -17,7 +17,7 @@ import (
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools"
 )
 
 const VersionMajor = tools.VersionMajor

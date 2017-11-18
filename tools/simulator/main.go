@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/immesys/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools"
 )
 
 const VersionMajor = tools.VersionMajor

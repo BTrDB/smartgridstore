@@ -8,8 +8,8 @@ import (
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools/manifest"
-	"github.com/immesys/smartgridstore/tools/upmuparser"
+	"github.com/BTrDB/smartgridstore/tools/manifest"
+	"github.com/BTrDB/smartgridstore/tools/upmuparser"
 	"github.com/pborman/uuid"
 
 	btrdb "gopkg.in/BTrDB/btrdb.v4"

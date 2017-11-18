@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/immesys/smartgridstore/tools/inserter"
+	"github.com/BTrDB/smartgridstore/tools/inserter"
 
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 	"gopkg.in/ini.v1"

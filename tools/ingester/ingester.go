@@ -16,9 +16,9 @@ import (
 	"github.com/BTrDB/btrdb-server/bte"
 	"github.com/ceph/go-ceph/rados"
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools"
-	"github.com/immesys/smartgridstore/tools/manifest"
-	"github.com/immesys/smartgridstore/tools/upmuparser"
+	"github.com/BTrDB/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools/manifest"
+	"github.com/BTrDB/smartgridstore/tools/upmuparser"
 	"gopkg.in/BTrDB/btrdb.v4"
 
 	uuid "github.com/pborman/uuid"

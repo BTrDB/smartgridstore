@@ -11,7 +11,7 @@ import (
 
 	shellwords "github.com/immesys/go-shellwords"
 	readline "github.com/immesys/readline"
-	"github.com/immesys/smartgridstore/admincli"
+	"github.com/BTrDB/smartgridstore/admincli"
 )
 
 type sess struct {

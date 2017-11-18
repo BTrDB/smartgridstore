@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/immesys/smartgridstore/tools/upmuparser"
+	"github.com/BTrDB/smartgridstore/tools/upmuparser"
 	"github.com/pborman/uuid"
 
 	btrdb "gopkg.in/BTrDB/btrdb.v4"

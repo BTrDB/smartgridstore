@@ -10,8 +10,8 @@ import (
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/tools"
-	"github.com/immesys/smartgridstore/tools/manifest"
+	"github.com/BTrDB/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools/manifest"
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 

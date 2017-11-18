@@ -6,7 +6,7 @@ import (
 	"io"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/immesys/smartgridstore/admincli"
+	"github.com/BTrDB/smartgridstore/admincli"
 )
 
 type usersModule struct {
