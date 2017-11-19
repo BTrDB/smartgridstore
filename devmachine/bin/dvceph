@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function check_var {
+  if [[ "${!1}" == "" ]]
+  then
+    echo "Please set \$$1"
+    exit 1
+  fi
+}
+
+# check the appropriate variables are set
+check_var CONTAINER_PREFIX
+
+docker exec ${CONTAINER_PREFIX}ceph-mon ceph "$@"
