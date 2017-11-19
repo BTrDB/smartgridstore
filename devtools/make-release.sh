@@ -65,6 +65,17 @@ then
 fi
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/c37ingress
+go get -u ./...
+go build
+c37ingress_ver=`./c37ingress -version`
+if [[ "$c37ingress_ver" != "$target_ver" ]]
+then
+  echo "C37 ingress version mismatch - got $c37ingress_ver"
+  exit 1
+fi
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/pmu2btrdb
 go get -u ./...
 go build
