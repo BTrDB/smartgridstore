@@ -43,6 +43,17 @@ then
 fi
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/apifrontend
+go get -u ./...
+go build
+apifrontend_ver=`./apifrontend -version`
+if [[ "$apifrontend_ver" != "$target_ver" ]]
+then
+  echo "API frontend version mismatch - got $apifrontend_ver"
+  exit 1
+fi
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/ingester
 go get -u ./...
 go build
@@ -118,6 +129,11 @@ cp ../../tools/admincliserver/admincliserver .
 docker build -t  btrdb/${PFX}console:$target_ver .
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/apifrontend
+cp ../../tools/apifrontend/apifrontend .
+docker build -t  btrdb/${PFX}apifrontend:$target_ver .
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/ingester
 cp ../../tools/ingester/ingester .
 docker build -t btrdb/${PFX}ingester:$target_ver .
@@ -148,6 +164,7 @@ echo "All containers built ok for $PFX-$target_ver , pushing containers"
 docker push btrdb/${PFX}mrplotter:$target_ver
 docker push btrdb/${PFX}console:$target_ver
 docker push btrdb/${PFX}ingester:$target_ver
+docker push btrdb/${PFX}apifrontend:$target_ver
 docker push btrdb/${PFX}c37ingress:$target_ver
 docker push btrdb/${PFX}receiver:$target_ver
 docker push btrdb/${PFX}pmu2btrdb:$target_ver
