@@ -2,8 +2,12 @@
 
 # which version of BTrDB and tools to install
 export VERSION=4.7.0
-# where to create the 4 osd directories to store data
+# where to store ceph data
 export OSDBASE=/srv/devmachine/ceph
+# on OSX we can't volume mount in storage because
+# the filesystem isn't compatible. This uses storage inside
+# the docker containers, which is probably fine, even across reboots
+export USE_EPHEMERAL_STORAGE=Y
 # where to put the etcd data
 export ETCDBASE=/srv/devmachine/etcd
 # which docker network to use (will be created if it doesn't exist)
@@ -25,6 +29,8 @@ export API_HTTP_PORT=9000
 
 # the port to bind the admin console SSH to
 export CONSOLE_PORT=2222
+
+
 
 # put the dv-ceph command in the path
 # this only works if you source this from the directory its actually in

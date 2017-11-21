@@ -25,13 +25,13 @@ check_var API_HTTP_PORT
 set -e
 mkdir -p ${OSDBASE}
 set +e
-
-FS=$(stat -f -c %T ${OSDBASE})
-if [[ "$FS" == "zfs" ]]
-then
-  echo "ceph OSDs don't work well on ZFS, please put OSDBASE on a different file system"
-  exit 1
-fi
+#
+# FS=$(stat -f -c %T ${OSDBASE})
+# if [[ "$FS" == "zfs" ]]
+# then
+#   echo "ceph OSDs don't work well on ZFS, please put OSDBASE on a different file system"
+#   exit 1
+# fi
 
 # try create the network
 OPUT=$(docker network create --subnet ${SUB24}.0/24 ${DOCKERNET} 2>&1)
@@ -158,12 +158,12 @@ done
 # if these parameters do not exist in the ceph config, we must add them
 if ! grep -e "name len = 256" ${OSDBASE}/etc/ceph/ceph.conf >/dev/null
 then
-  echo "[WARN] inserting ext4 filename workaround and restarting mon"
+  echo "[WARN] inserting filesystem workarounds and restarting mon"
   echo "osd max object name len = 256" >> ${OSDBASE}/etc/ceph/ceph.conf
   echo "osd max object namespace len = 64" >> ${OSDBASE}/etc/ceph/ceph.conf
   docker restart ${CONTAINER_PREFIX}ceph-mon >/dev/null 2>&1
 else
-  echo "[INFO] ext4 workaround found"
+  echo "[INFO] filesystem workarounds found"
 fi
 
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.4 \
@@ -186,11 +186,16 @@ echo "[INFO] ceph MGR started"
 for osdnum in 0 1 2 3
 do
   lastoctet=$(( 10 + $osdnum ))
+  PSTORAGEOPT="-v ${OSDBASE}/osd${osdnum}:/var/lib/ceph/osd"
+  if [[ "$USE_EPHEMERAL_STORAGE" == "Y" ]]
+  then
+    PSTORAGEOPT=" "
+  fi
   OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.${lastoctet} \
     --name ${CONTAINER_PREFIX}ceph-osd-${osdnum} \
    -v ${OSDBASE}/etc/ceph:/etc/ceph \
-   -v ${OSDBASE}/var/lib/ceph/:/var/lib/ceph/ \
-   -v ${OSDBASE}/osd${osdnum}:/var/lib/ceph/osd \
+   -v ${OSDBASE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
+   ${PSTORAGEOPT} \
    -e OSD_TYPE=directory \
    btrdb/cephdaemon osd 2>&1)
 
