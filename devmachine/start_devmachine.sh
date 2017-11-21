@@ -255,7 +255,6 @@ fi
 
 # run the btrdb ensuredb command
 echo "[INFO] checking database is initialized"
-ETCD_ENDPOINT=${SUB24}.20:2379
 docker run -it \
   --net ${DOCKERNET} \
   --ip ${SUB24}.21 \

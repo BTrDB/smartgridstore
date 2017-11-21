@@ -35,3 +35,5 @@ export CONSOLE_PORT=2222
 # put the dv-ceph command in the path
 # this only works if you source this from the directory its actually in
 export PATH=$PATH:$PWD/bin
+export ETCD_ENDPOINT=${SUB24}.20:2379
+export BTRDB_ENDPOINTS=${SUB24}.21:4410
