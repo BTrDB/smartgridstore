@@ -1,0 +1,49 @@
+# {{ .GenLine }}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: apifrontend
+  namespace: {{.TargetNamespace}}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: apifrontend
+    spec:
+      containers:
+      - name: apifrontend
+        image: btrdb/{{.Pfx}}apifrontend:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
+        env:
+          - name: ETCD_ENDPOINT
+            value: http://etcd-client:2379
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410
+        ports:
+          - containerPort: 4410
+            protocol: TCP
+            name: grpc
+          - containerPort: 9000
+            protocol: TCP
+            name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apifrontend
+  namespace: {{.TargetNamespace}}
+  labels:
+    app: apifrontend
+spec:
+  ports:
+  - port: 4410
+    targetPort: grpc
+    name: grpc
+  - port: 9000
+    targetPort: http
+    name: http
+  externalIPs:{{range .SiteInfo.ExternalIPs}}
+  - {{.}}{{end}}
+  selector:
+    app: apifrontend
