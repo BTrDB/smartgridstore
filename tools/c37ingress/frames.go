@@ -70,7 +70,12 @@ func ReadConfig12Frame(ch *CommonHeader, r io.Reader) (*Config12Frame, error) {
 		if err != nil {
 			return nil, err
 		}
-		e.STN = string(bytes.TrimRight(stn_arr, "\x00 "))
+		zeroidx := bytes.IndexByte(stn_arr, 0)
+		if zeroidx >= 0 {
+			e.STN = string(bytes.TrimRight(stn_arr[:zeroidx], "\x00 "))
+		} else {
+			e.STN = string(bytes.TrimRight(stn_arr, "\x00 "))
+		}
 		err = binary.Read(subr, binary.BigEndian, &e.IDCODE)
 		if err != nil {
 			return nil, err

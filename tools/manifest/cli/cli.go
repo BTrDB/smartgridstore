@@ -351,7 +351,7 @@ func NewManifestCLIModule(etcdClient *etcd.Client) *admincli.GenericCLIModule {
 
 					for _, dev := range devs {
 						if dev.Metadata == nil || dev.Streams == nil {
-							writeStringf(output, "%s: [CORRUPT ENTRY]\n", dev.Descriptor)
+							writeStringf(output, "%s: [NO ADDITIONAL METADATA]\n", dev.Descriptor)
 							continue
 						}
 						marshalled, err := yaml.Marshal(dev)

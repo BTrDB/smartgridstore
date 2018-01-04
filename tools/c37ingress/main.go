@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/BTrDB/smartgridstore/tools"
 	"github.com/BTrDB/smartgridstore/tools/manifest"
+	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/pborman/uuid"
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
@@ -54,35 +55,78 @@ func main() {
 		}
 	}()
 	log.Println("Connected")
-	devs, err := manifest.RetrieveMultipleManifestDevices(context.Background(), etcdConn, "c37-118.pdc.")
-	if err != nil {
-		panic(err)
-	}
 
-	for _, dev := range devs {
-		identifier := dev.Descriptor
-		connstring := strings.SplitN(identifier, ".", 3)[2]
-		fmt.Printf("identified pdc %q\n", connstring)
-		//connstring looks like PREFIX@IDCODE@HOST:PORT
-		parts := strings.SplitN(connstring, "@", 3)
-		if len(parts) != 3 {
-			fmt.Printf("Invalid connection string %q\n", connstring)
-			continue
-		}
-		prefix := parts[0]
-		idcode, err := strconv.ParseInt(parts[1], 10, 64)
-		if err != nil {
-			fmt.Printf("Invalid connection string %q\n", connstring)
-			continue
-		}
-		go process(btrdbconn, int(idcode), prefix, parts[2])
-	}
+	ourid := uuid.NewRandom().String()
+	ourctx := context.Background()
+	//Get the lock table
+devloop:
 	for {
 		time.Sleep(5 * time.Second)
-	}
+		devs, err := manifest.RetrieveMultipleManifestDevices(context.Background(), etcdConn, "c37-118.pdc.")
+		if err != nil {
+			panic(err)
+		}
+		ltable, err := manifest.GetLockTable(context.Background(), etcdConn)
 
+		us, min2, locked := parseLTable(ltable, ourid)
+		if us > min2 && min2 != -1 {
+			//Do not start doing a new device if we are not doing a small number
+			//of devices
+			continue
+		}
+		fmt.Printf("We have a total of %d devices locked\n", us)
+		// We need to start a device
+		for _, d := range devs {
+			if locked[d.Descriptor] {
+				continue
+			}
+			identifier := d.Descriptor
+			connstring := strings.SplitN(identifier, ".", 3)[2]
+			fmt.Printf("[global] identified pdc %q\n", connstring)
+			//connstring looks like PREFIX@IDCODE@HOST:PORT
+			parts := strings.SplitN(connstring, "@", 3)
+			if len(parts) != 3 {
+				fmt.Printf("Invalid connection string %q\n", connstring)
+				continue
+			}
+			prefix := parts[0]
+			idcode, err := strconv.ParseInt(parts[1], 10, 64)
+			if err != nil {
+				fmt.Printf("Invalid connection string %q\n", connstring)
+				continue
+			}
+			gotlock, err := manifest.ObtainDeviceLock(ourctx, etcdConn, d, ourid)
+			if err != nil {
+				panic(err)
+			}
+			if gotlock {
+				fmt.Printf("We locked a device and started processing\n")
+				go process(btrdbconn, int(idcode), prefix, parts[2])
+				continue devloop
+			}
+		}
+	}
 }
 
+func parseLTable(t map[string][]string, ourid string) (int, int, map[string]bool) {
+	min := -1
+	min2 := -1
+	us := 0
+	locked := make(map[string]bool)
+	for k, v := range t {
+		if len(v) <= min || min == -1 {
+			min2 = min
+			min = len(v)
+		}
+		if k == ourid {
+			us = len(v)
+		}
+		for _, vi := range v {
+			locked[vi] = true
+		}
+	}
+	return us, min2, locked
+}
 func process(db *btrdb.BTrDB, idcode int, prefix string, target string) {
 	inserter := NewInserter(db, prefix)
 

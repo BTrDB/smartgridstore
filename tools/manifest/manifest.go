@@ -3,6 +3,7 @@ package manifest
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/samkumar/etcdstruct"
 	"github.com/ugorji/go/codec"
@@ -11,6 +12,7 @@ import (
 )
 
 const manifestpath = "manifest/"
+const manifestlockpath = "manifestlocks/"
 
 var etcdprefix = ""
 
@@ -45,6 +47,10 @@ func getEtcdKey(name string) string {
 	return fmt.Sprintf("%s%s%s", etcdprefix, manifestpath, name)
 }
 
+func getEtcdLockKey(name string) string {
+	return fmt.Sprintf("%s%s%s", etcdprefix, manifestlockpath, name)
+}
+
 func getNameFromEtcdKey(etcdKey string) string {
 	return etcdKey[len(etcdprefix)+len(manifestpath):]
 }
@@ -73,6 +79,49 @@ func UpsertManifestDeviceAtomically(ctx context.Context, etcdClient *etcd.Client
 	return etcdstruct.UpsertEtcdStructAtomic(ctx, etcdClient, getEtcdKey(md.Descriptor), md)
 }
 
+func GetLockTable(ctx context.Context, etcdClient *etcd.Client) (map[string][]string, error) {
+	locktableprefix := fmt.Sprintf("%s%s", etcdprefix, manifestlockpath)
+	resp, err := etcdClient.Get(ctx, locktableprefix, etcd.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+	ltable := make(map[string][]string)
+	for _, r := range resp.Kvs {
+		did := strings.TrimPrefix(string(r.Key), locktableprefix)
+		ltable[string(r.Value)] = append(ltable[string(r.Value)], did)
+	}
+	return ltable, nil
+}
+func ObtainDeviceLock(ctx context.Context, etcdClient *etcd.Client, md *ManifestDevice, myid string) (bool, error) {
+	lockkey := getEtcdLockKey(md.Descriptor)
+	lockval := myid
+	resp, err := etcdClient.Grant(ctx, 5)
+	if err != nil {
+		return false, err
+	}
+
+	txr, err := etcdClient.Txn(ctx).
+		If(etcd.Compare(etcd.CreateRevision(lockkey), "=", 0)).
+		Then(etcd.OpPut(lockkey, lockval, etcd.WithLease(resp.ID))).
+		Commit()
+	if err != nil {
+		return false, err
+	}
+	if !txr.Succeeded {
+		return false, nil
+	}
+	ch, err := etcdClient.KeepAlive(ctx, resp.ID)
+	if err != nil {
+		return false, err
+	}
+	go func() {
+		for _ = range ch {
+
+		}
+		panic("ETCD lease ended unexpectedly, restarting")
+	}()
+	return true, nil
+}
 func RetrieveMultipleManifestDevices(ctx context.Context, etcdClient *etcd.Client, descprefix string) ([]*ManifestDevice, error) {
 	etcdKeyPrefix := getEtcdKey(descprefix)
 	devs := make([]*ManifestDevice, 0, 1024)
