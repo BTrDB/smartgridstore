@@ -314,8 +314,7 @@ func WriteChecksummedFrame(frame Frame, w io.Writer) error {
 	chk := Checksum(dat.Bytes())
 	dat.WriteByte(byte(chk >> 8))
 	dat.WriteByte(byte(chk & 0xFF))
-	n, err := w.Write(dat.Bytes())
-	fmt.Printf("wrote %d byte frame\n", n)
+	_, err = w.Write(dat.Bytes())
 	return err
 }
 

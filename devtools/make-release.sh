@@ -4,7 +4,7 @@ echo "determining version"
 
 set -ex
 
-PFX=""
+PFX="dev-"
 
 pushd $GOPATH/src/github.com/BTrDB/btrdb-server/btrdbd
 go build

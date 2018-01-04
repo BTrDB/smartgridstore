@@ -1,15 +1,20 @@
 # source this script
 
+# common directory for storing data
+# NOTE: Make sure permissions are setup correctly for this dir.
+#       otherwise, just use one under home (e.g. "~/.btrdb-devmachine")
+export DEVMACHINE_BASE=/srv/devmachine
+# where to store ceph data
+export OSDBASE=$DEVMACHINE_BASE/ceph
+# where to put the etcd data
+export ETCDBASE=$DEVMACHINE_BASE/etcd
+
 # which version of BTrDB and tools to install
 export VERSION=4.7.0
-# where to store ceph data
-export OSDBASE=/srv/devmachine/ceph
 # on OSX we can't volume mount in storage because
 # the filesystem isn't compatible. This uses storage inside
 # the docker containers, which is probably fine, even across reboots
 export USE_EPHEMERAL_STORAGE=Y
-# where to put the etcd data
-export ETCDBASE=/srv/devmachine/etcd
 # which docker network to use (will be created if it doesn't exist)
 export DOCKERNET=cephnet
 # subnet .24 prefix to use
