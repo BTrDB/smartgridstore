@@ -52,81 +52,11 @@ docker pull btrdb/stubetcd:latest 2>&1 | sed "s/^/[INFO][PULL] /"
 docker pull btrdb/db:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
 docker pull btrdb/apifrontend:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
 
-#
-# # if the ceph containers already exist, delete them
-# docker inspect ${CONTAINER_PREFIX}ceph-mon >/dev/null 2>&1
-# if [[ $? == 0 ]]
-# then
-#   # the container exists
-#   OPUT=$(docker rm -f ${CONTAINER_PREFIX}ceph-mon 2>&1)
-#   if [[ $? != 0 ]]
-#   then
-#     echo "[ERROR] monitor container exists, but could not kill it:"
-#     echo $OPUT | sed "s/^/[FATAL ERROR] /"
-#     exit 1
-#   fi
-# fi
-#
-# docker inspect ${CONTAINER_PREFIX}ceph-mgr >/dev/null 2>&1
-# if [[ $? == 0 ]]
-# then
-#   # the container exists
-#   OPUT=$(docker rm -f ${CONTAINER_PREFIX}ceph-mgr 2>&1)
-#   if [[ $? != 0 ]]
-#   then
-#     echo "[ERROR] mgr container exists, but could not kill it:"
-#     echo $OPUT | sed "s/^/[FATAL ERROR] /"
-#     exit 1
-#   fi
-# fi
-#
-# # if the ceph containers already exist, delete them
-# docker inspect ${CONTAINER_PREFIX}etcd >/dev/null 2>&1
-# if [[ $? == 0 ]]
-# then
-#   # the container exists
-#   OPUT=$(docker rm -f ${CONTAINER_PREFIX}etcd 2>&1)
-#   if [[ $? != 0 ]]
-#   then
-#     echo "[ERROR] etcd container exists, but could not kill it:"
-#     echo $OPUT | sed "s/^/[FATAL ERROR] /"
-#     exit 1
-#   fi
-# fi
-#
-# docker inspect ${CONTAINER_PREFIX}btrdbd >/dev/null 2>&1
-# if [[ $? == 0 ]]
-# then
-#   # the container exists
-#   OPUT=$(docker rm -f ${CONTAINER_PREFIX}btrdbd 2>&1)
-#   if [[ $? != 0 ]]
-#   then
-#     echo "[ERROR] btrdb container exists, but could not kill it:"
-#     echo $OPUT | sed "s/^/[FATAL ERROR] /"
-#     exit 1
-#   fi
-# fi
-#
-# for osdnum in 0 1 2 3
-# do
-#   docker inspect ${CONTAINER_PREFIX}ceph-osd-${osdnum} >/dev/null 2>&1
-#   if [[ $? == 0 ]]
-#   then
-#     # the container exists
-#     OPUT=$(docker rm -f ${CONTAINER_PREFIX}ceph-osd-${osdnum} 2>&1)
-#     if [[ $? != 0 ]]
-#     then
-#       echo "[ERROR] osd-${osdnum} container exists, but could not kill it:"
-#       echo $OPUT | sed "s/^/[FATAL ERROR] /"
-#       exit 1
-#     fi
-#   fi
-# done
-
 # all containers are gone, lets create new ones
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.5 \
  --name ${CONTAINER_PREFIX}ceph-mon \
  -v ${OSDBASE}/etc/ceph:/etc/ceph \
+ --restart always \
  -v ${OSDBASE}/var/lib/ceph/:/var/lib/ceph/ \
  -e MON_IP=${SUB24}.5 \
  -e CEPH_PUBLIC_NETWORK=${SUB24}.0/24 \
@@ -158,16 +88,18 @@ done
 # if these parameters do not exist in the ceph config, we must add them
 if ! grep -e "name len = 256" ${OSDBASE}/etc/ceph/ceph.conf >/dev/null
 then
-  echo "[WARN] inserting filesystem workarounds and restarting mon"
+  echo "[WARN] custom monitor configs and restarting mon"
   echo "osd max object name len = 256" >> ${OSDBASE}/etc/ceph/ceph.conf
   echo "osd max object namespace len = 64" >> ${OSDBASE}/etc/ceph/ceph.conf
+  echo "mon allow pool delete = true" >> ${OSDBASE}/etc/ceph/ceph.conf
   docker restart ${CONTAINER_PREFIX}ceph-mon >/dev/null 2>&1
 else
-  echo "[INFO] filesystem workarounds found"
+  echo "[INFO] custom monitor configs found"
 fi
 
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.4 \
  --name ${CONTAINER_PREFIX}ceph-mgr \
+  --restart always \
  -v ${OSDBASE}/etc/ceph:/etc/ceph \
  -v ${OSDBASE}/var/lib/ceph/:/var/lib/ceph/ \
  -e MON_IP=${SUB24}.5 \
@@ -193,6 +125,7 @@ do
   fi
   OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.${lastoctet} \
     --name ${CONTAINER_PREFIX}ceph-osd-${osdnum} \
+    --restart always \
    -v ${OSDBASE}/etc/ceph:/etc/ceph \
    -v ${OSDBASE}/var/lib/ceph/bootstrap-osd:/var/lib/ceph/bootstrap-osd \
    ${PSTORAGEOPT} \
@@ -212,6 +145,7 @@ done
 # start etcd
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.20 \
   --name ${CONTAINER_PREFIX}etcd \
+  --restart always \
   -v ${ETCDBASE}/db:/var/lib/etcd \
   -e ETCD_DATA_DIR=/var/lib/etcd \
   -e ETCD_LISTEN_CLIENT_URLS=http://${SUB24}.20:2379 \
@@ -261,6 +195,7 @@ docker run -it \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e CEPH_HOT_POOL=${HOTPOOL} \
+  -e BTRDB_BLOCK_CACHE=62500 \
   -e CEPH_DATA_POOL=${COLDPOOL} \
   -e MY_POD_IP=${SUB24}.21 \
   btrdb/db:${VERSION} ensuredb | sed "s/^/[INFO][DB INIT] /"
@@ -276,6 +211,7 @@ OPUT=$(docker run -d \
   --net ${DOCKERNET} \
   --name ${CONTAINER_PREFIX}btrdbd \
   --ip ${SUB24}.21 \
+  --restart always \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e CEPH_HOT_POOL=${HOTPOOL} \
@@ -307,6 +243,7 @@ OPUT=$(docker run -d \
   --net ${DOCKERNET} \
   -p ${CONSOLE_PORT}:2222 \
   --ip ${SUB24}.26 \
+  --restart always \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -v ${OSDBASE}/etc/adminserver:/etc/adminserver \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
@@ -327,6 +264,7 @@ OPUT=$(docker run -d \
   --net ${DOCKERNET} \
   -p ${PLOTTER_PORT}:443 \
   --ip ${SUB24}.25 \
+  --restart always \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e BTRDB_ENDPOINTS=${SUB24}.21:4410 \
   btrdb/mrplotter:${VERSION})
@@ -343,6 +281,7 @@ echo "[INFO] plotter server started"
 OPUT=$(docker run -d \
   --name ${CONTAINER_PREFIX}apifrontend \
   --net ${DOCKERNET} \
+  --restart always \
   -p ${API_GRPC_PORT}:4410 \
   -p ${API_HTTP_PORT}:9000 \
   --ip ${SUB24}.27 \
