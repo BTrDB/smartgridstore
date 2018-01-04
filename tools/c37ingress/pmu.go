@@ -168,26 +168,48 @@ func (p *PMU) ConfigFor(idcode uint16) (*Config12Frame, error) {
 }
 func (p *PMU) readFrame() (*CommonHeader, Frame, error) {
 	r := p.br
+	initialByte, err := r.ReadByte()
+	if err != nil {
+		return nil, nil, err
+	}
+	skipped := 0
+	for initialByte != 0xAA {
+		skipped++
+		initialByte, err = r.ReadByte()
+	}
+	if skipped != 0 {
+		fmt.Printf("[%s] SYNC LOSS DETECTED, SKIPPED %d BYTES RESYNCING\n", p.nickname, skipped)
+	}
 	raw := make([]byte, CommonHeaderLength)
-	_, err := r.Read(raw)
+	nread, err := io.ReadFull(r, raw[1:])
 	if err != nil {
 		return nil, nil, err
 	}
-	ch, err := ReadCommonHeader(bytes.NewBuffer(raw))
+	if nread != len(raw[1:]) {
+		fmt.Printf("READ LEN MISMATCH %d vs %d\n", nread, len(raw[1:]))
+	}
+	raw[0] = initialByte
+	rcopy := make([]byte, CommonHeaderLength)
+	copy(rcopy, raw)
+
+	ch, err := ReadCommonHeader(bytes.NewBuffer(rcopy))
 	if err != nil {
 		return nil, nil, err
 	}
+
 	rest := make([]byte, int(ch.FRAMESIZE)-CommonHeaderLength)
 	_, err = io.ReadFull(r, rest)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	raw = append(raw, rest[:len(rest)-2]...)
 	realchk := Checksum(raw)
 	expectedchk := (int(rest[len(rest)-2]) << 8) + int(rest[len(rest)-1])
 	if expectedchk != int(realchk) {
-		fmt.Printf("[%s] frame checksum failure type=%d, got=%d expected=%d\n", p.nickname, ch.SyncType(), realchk, expectedchk)
-		return nil, nil, fmt.Errorf("Frame checksum failure\n")
+		fmt.Printf("[%s] frame checksum failure type=%d, got=%x expected=%x\n", p.nickname, ch.SyncType(), realchk, expectedchk)
+		//the spec says silently ignore frames with bad checksums
+		return ch, nil, nil
 	}
 	if ch.SyncType() == SYNC_TYPE_CFG2 {
 		cfg2, err := ReadConfig12Frame(ch, bytes.NewBuffer(rest))
@@ -202,21 +224,21 @@ func (p *PMU) readFrame() (*CommonHeader, Frame, error) {
 			fmt.Printf("[%s] dropping data frame: no config\n", p.nickname)
 			return ch, nil, nil
 		}
-
 		dat, err := ReadDataFrame(ch, cfg, bytes.NewBuffer(rest))
 		if err != nil {
 			return nil, nil, err
 		}
-		//fmt.Printf("Received data frame: \n")
-		//spew.Dump(dat)
-		//fmt.Printf("Decoded using cfg:\n")
-		//spew.Dump(cfg)
 		return ch, dat, nil
 	}
 	if ch.SyncType() == SYNC_TYPE_CFG1 {
-		return ch, nil, nil
+		cfg1, err := ReadConfig12Frame(ch, bytes.NewBuffer(rest))
+		if err != nil {
+			return nil, nil, err
+		}
+		return ch, cfg1, nil
 	}
 	if ch.SyncType() == SYNC_TYPE_CFG3 {
+		fmt.Printf("[%s] WARN got CFG3 which is not supported\n", p.nickname)
 		return ch, nil, nil
 	}
 	return ch, nil, fmt.Errorf("Unknown frame type")
