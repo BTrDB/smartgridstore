@@ -3,8 +3,8 @@ FROM ubuntu:xenial
 ENV ETCDCTL_VERSION v3.1.7
 ENV ETCDCTL_ARCH linux-amd64
 ENV CEPH_VERSION luminous
-ENV KUBE_VERSION v1.7.0
-ENV GO_VERSION 1.8.1
+ENV KUBE_VERSION v1.8.5
+ENV GO_VERSION 1.9.2
 RUN apt-get update && apt-get install -y net-tools git build-essential wget
 RUN wget -q -O- 'https://download.ceph.com/keys/release.asc' | apt-key add - && \
     echo "deb http://download.ceph.com/debian-${CEPH_VERSION}/ xenial main" | tee /etc/apt/sources.list.d/ceph-${CEPH_VERSION}.list && \
