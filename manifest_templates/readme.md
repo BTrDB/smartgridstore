@@ -1,4 +1,4 @@
-# Ordering
+# ordering
 
 The full documentation can be found on smartgrid.store, but here is the order
 you should create things:
@@ -12,8 +12,8 @@ global/etcd.clusterrole.yaml
 
 ### core
 
-Create the secrets first (you must also have done the PV provider). There is some
-missing docs about that but you need to have a storageclass called `etcd-backup-gce-pd`
+Create the secrets first (you must also have done the PV provider). You need to
+have a storageclass called `etcd-backup-gce-pd` for the etcd operator to work.
 
 Secrets:
 ```

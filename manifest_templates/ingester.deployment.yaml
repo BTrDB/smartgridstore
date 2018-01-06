@@ -5,6 +5,7 @@ metadata:
   name: ingester-upmu
   namespace: {{.TargetNamespace}}
 spec:
+  # Ingester cannot operate with multiple copies at this time
   replicas: 1
   template:
     metadata:

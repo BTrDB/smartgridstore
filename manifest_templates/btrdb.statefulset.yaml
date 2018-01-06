@@ -50,7 +50,9 @@ spec:
           - name: BTRDB_BLOCK_CACHE
             value: "1000000"
           - name: BTRDB_ENABLE_OVERWATCH
-            value: "yes"
+            value: "NO"
+          - name: BTRDB_ENABLE_OBLITERATE
+            value: "YES"
           - name: MY_POD_NAME
             valueFrom:
               fieldRef:

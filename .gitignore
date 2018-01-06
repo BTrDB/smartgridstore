@@ -6,3 +6,13 @@ tools/ingester/ingester
 containers/ingester/ingester
 tools/pmu2btrdb/pmu2btrdb
 containers/pmu2btrdb/pmu2btrdb
+containers/adminconsole/admincliserver
+containers/adminconsole/apifrontend
+containers/c37ingress/c37ingress
+containers/apifrontend/apifrontend
+tools/apifrontend/bindata.go
+tools/c37ingress/c37ingress
+tools/apifrontend/apifrontend
+tools/admincliserver/admincliserver
+mfgen/templates.go
+mfgen/mfgen
