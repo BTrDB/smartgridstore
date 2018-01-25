@@ -146,6 +146,7 @@ done
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.20 \
   --name ${CONTAINER_PREFIX}etcd \
   --restart always \
+  -p 2379:2379 \
   -v ${ETCDBASE}/db:/var/lib/etcd \
   -e ETCD_DATA_DIR=/var/lib/etcd \
   -e ETCD_LISTEN_CLIENT_URLS=http://${SUB24}.20:2379 \
