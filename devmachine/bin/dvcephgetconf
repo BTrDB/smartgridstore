@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# when running tests against rados (e.g btrdb internal unit tests) you
+# sometimes need a ceph.conf and a keyring that work for the devmachine
+# this script will get those two files and write it to a directory of
+# your choice
+
+function check_var {
+  if [[ "${!1}" == "" ]]
+  then
+    echo "Please set \$$1"
+    exit 1
+  fi
+}
+
+# check the appropriate variables are set
+check_var CONTAINER_PREFIX
+
+if [[ "$1" == "" ]]
+then
+  echo "usage: dvcephgetconf <dir>"
+  exit 1
+fi
+docker cp ${CONTAINER_PREFIX}ceph-mon:/etc/ceph/ceph.conf $1
+docker cp ${CONTAINER_PREFIX}ceph-mon:/etc/ceph/ceph.client.admin.keyring $1
