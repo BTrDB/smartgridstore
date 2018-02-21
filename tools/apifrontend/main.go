@@ -461,8 +461,12 @@ func (a *apiProvider) FaultInject(ctx context.Context, p *pb.FaultInjectParams) 
 func (a *apiProvider) Info(ctx context.Context, params *pb.InfoParams) (*pb.InfoResponse, error) {
 	//We do not forward the info call, as we want the client to always contact us
 	// nevertheless tihs PARTICULAR repsonse is a hack
+	ourip := "127.0.0.1:4410"
+	if ex := os.Getenv("EXTERNAL_ADDRESS"); ex != "" {
+		ourip = ex
+	}
 	ProxyInfo := &pb.ProxyInfo{
-		ProxyEndpoints: []string{"127.0.0.1:4410"},
+		ProxyEndpoints: []string{ourip},
 	}
 	return &pb.InfoResponse{
 		MajorVersion: MajorVersion,
