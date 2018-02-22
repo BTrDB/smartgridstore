@@ -16,5 +16,5 @@ pushd /etc/ceph
 kubectl create secret -n {{.TargetNamespace}} generic ceph-keyring --from-file=ceph.client.admin.keyring --from-file=ceph.conf
 popd
 
-secret=$(cat /etc/ceph/ceph.client.admin.keyring  | grep "key" | cut -d'=' -f2 | tr -d '[:space:]')
+secret=$(cat /etc/ceph/ceph.client.admin.keyring  | grep "key" | cut -d' ' -f3 | tr -d '[:space:]')
 kubectl create secret generic ceph-rbd-secret -n {{.TargetNamespace}} --type="kubernetes.io/rbd" --from-literal=key=${secret}
