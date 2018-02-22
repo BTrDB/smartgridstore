@@ -15,7 +15,6 @@ target_ver=$btrdb_ver
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/mr-plotter
-go get -u ./...
 go build
 mrp_ver=`./mr-plotter -version`
 if [[ "$mrp_ver" != "$target_ver" ]]
@@ -33,7 +32,6 @@ popd
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/admincliserver
-go get -u ./...
 go build
 cli_ver=`./admincliserver -version`
 if [[ "$cli_ver" != "$target_ver" ]]
@@ -44,7 +42,7 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/apifrontend
-go get -u ./...
+go generate
 go build
 apifrontend_ver=`./apifrontend -version`
 if [[ "$apifrontend_ver" != "$target_ver" ]]
@@ -55,7 +53,6 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/ingester
-go get -u ./...
 go build
 ing_ver=`./ingester -version`
 if [[ "$ing_ver" != "$target_ver" ]]
@@ -66,7 +63,6 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/receiver
-go get -u ./...
 go build
 rec_ver=`./receiver -version`
 if [[ "$rec_ver" != "$target_ver" ]]
@@ -77,7 +73,6 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/c37ingress
-go get -u ./...
 go build
 c37ingress_ver=`./c37ingress -version`
 if [[ "$c37ingress_ver" != "$target_ver" ]]
@@ -88,7 +83,6 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/pmu2btrdb
-go get -u ./...
 go build
 pmu2btrdb_ver=`./pmu2btrdb -version`
 if [[ "$pmu2btrdb_ver" != "$target_ver" ]]
@@ -99,7 +93,6 @@ fi
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/simulator
-go get -u ./...
 go build
 simulator_ver=`./simulator -version`
 if [[ "$simulator_ver" != "$target_ver" ]]

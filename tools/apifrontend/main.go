@@ -14,7 +14,7 @@ import (
 
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
-	"github.com/BTrDB/btrdb-server/version"
+	"github.com/BTrDB/smartgridstore/tools"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/op/go-logging"
@@ -23,10 +23,8 @@ import (
 	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
-const MajorVersion = version.Major
-const MinorVersion = version.Minor
-
-var VersionString = version.VersionString
+const MajorVersion = tools.VersionMajor
+const MinorVersion = tools.VersionMinor
 
 type apiProvider struct {
 	s          *grpc.Server
@@ -121,7 +119,7 @@ func ProxyGRPC(laddr string) GRPCInterface {
 
 func main() {
 	if len(os.Args) == 2 && os.Args[1] == "-version" {
-		fmt.Printf("%s\n", VersionString)
+		fmt.Printf("%d.%d.%d\n", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
 		os.Exit(0)
 	}
 
@@ -471,7 +469,7 @@ func (a *apiProvider) Info(ctx context.Context, params *pb.InfoParams) (*pb.Info
 	return &pb.InfoResponse{
 		MajorVersion: MajorVersion,
 		MinorVersion: MinorVersion,
-		Build:        VersionString,
+		Build:        fmt.Sprintf("%d.%d.%d", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch),
 		Proxy:        ProxyInfo,
 	}, nil
 }

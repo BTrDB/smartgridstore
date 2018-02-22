@@ -16,3 +16,4 @@ tools/apifrontend/apifrontend
 tools/admincliserver/admincliserver
 mfgen/templates.go
 mfgen/mfgen
+vendor

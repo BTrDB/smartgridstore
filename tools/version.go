@@ -1,5 +1,5 @@
 package tools
 
 const VersionMajor = 4
-const VersionMinor = 7
-const VersionPatch = 3
+const VersionMinor = 9
+const VersionPatch = 0
