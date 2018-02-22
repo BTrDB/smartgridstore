@@ -30,7 +30,7 @@ core/etcd.cluster.yaml
 Then wait for your three etcd pods to be up and running ok and do createdb:
 
 ```
-core/createdb.job.yaml
+core/ensuredb.job.yaml
 ```
 Wait for that to finish okay and then do btrdb
 

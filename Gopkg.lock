@@ -7,11 +7,13 @@
   packages = [
     "bte",
     "cliplugin",
+    "internal/bprovider",
+    "internal/cephprovider",
     "internal/configprovider",
-    "internal/rez",
-    "version"
+    "internal/jprovider",
+    "internal/rez"
   ]
-  revision = "3276e55a60884eba35e24e1a89ba156455b35568"
+  revision = "97b3854b0d42b43de6619b11208ba0716a5e8496"
 
 [[projects]]
   branch = "master"
@@ -20,7 +22,7 @@
     "accounts",
     "keys"
   ]
-  revision = "c4faa2c97ef9ae524c4a947d500cdcbb462dc444"
+  revision = "465fbe76b0c8367145f6d9e1df3a3e0686a59e7a"
 
 [[projects]]
   branch = "master"
@@ -140,10 +142,22 @@
   version = "v1.1"
 
 [[projects]]
+  name = "github.com/philhofer/fwd"
+  packages = ["."]
+  revision = "bb6d471dc95d4fe11e432687f8b70ff496cf3136"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/samkumar/etcdstruct"
   packages = ["."]
   revision = "824d9135213e18162751f0f87c3d7607ef71f448"
+
+[[projects]]
+  name = "github.com/tinylib/msgp"
+  packages = ["msgp"]
+  revision = "b2b6a672cf1e5b90748f79b8b81fc8c5cf0571a1"
+  version = "1.0.2"
 
 [[projects]]
   name = "github.com/ugorji/go"
@@ -178,7 +192,7 @@
     "poly1305",
     "ssh"
   ]
-  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
+  revision = "49796115aa4b964c318aad4f3084fdb41e9aa067"
 
 [[projects]]
   branch = "master"
@@ -323,6 +337,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c3afecb1fe37542125e51667bd7d06a42408af4f4001a851c89fca7b32d6a91a"
+  inputs-digest = "f0527fd231e6f4e238014f9383fe851998ef3f349fe1ac042c57c9ad3b2530cf"
   solver-name = "gps-cdcl"
   solver-version = 1
