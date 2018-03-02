@@ -103,16 +103,16 @@
   revision = "e0489551cf5116e27d7cc69d97a53cdbdd028acf"
 
 [[projects]]
+  branch = "master"
   name = "github.com/immesys/go-shellwords"
   packages = ["."]
-  revision = "753a2322a99f87c0eff284980e77f53041555bc6"
-  version = "v1.0.1"
+  revision = "3335b2d69e56f417c8e6e31242d916f747f604ef"
 
 [[projects]]
+  branch = "master"
   name = "github.com/immesys/readline"
   packages = ["."]
-  revision = "62c6fe6193755f722b8b8788aa7357be55a50ff1"
-  version = "v1.4"
+  revision = "164e0bd80c7031e19402e8d2347bedc1673ceeb1"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -337,6 +337,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f0527fd231e6f4e238014f9383fe851998ef3f349fe1ac042c57c9ad3b2530cf"
+  inputs-digest = "163d667b81cc066e1116a0d44fdcfd2ed1df35265bef157f41c1a35791f31343"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -70,6 +70,7 @@ spec:
           protocol: TCP
         - containerPort: 9000
           protocol: TCP
+      terminationGracePeriodSeconds: 600
       volumes:
         - name: ceph-keyring
           secret:

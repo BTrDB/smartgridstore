@@ -10,7 +10,7 @@ import (
 
 //go:generate go-bindata -o templates.go -prefix ../manifest_templates ../manifest_templates/
 
-const PackageVersion = "4.9.0"
+const PackageVersion = "4.9.1"
 
 func main() {
 	app := cli.NewApp()

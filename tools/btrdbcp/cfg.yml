@@ -1,0 +1,54 @@
+fromserver: 128.32.37.200:4410
+toserver: 128.32.37.193:4410
+starttime: "2015-01-02T15:04:05+07:00"
+endtime: "2018-01-02T15:04:05+07:00"
+abortifexists: true
+streams:
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: L1MAG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: L2MAG
+#  - srccollection: rpuref3/1086
+#    dstcollection: rpuref3/1086
+#    tags:
+#      name: L3MAG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: L1ANG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: L2ANG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: L3ANG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C1MAG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C2MAG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C3MAG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C1ANG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C2ANG
+  - srccollection: rpuref3/1086
+    dstcollection: rpuref3/1086
+    tags:
+      name: C3ANG

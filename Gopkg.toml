@@ -59,11 +59,11 @@
 
 [[constraint]]
   name = "github.com/immesys/go-shellwords"
-  version = "1.0.1"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/immesys/readline"
-  version = "1.4.0"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/op/go-logging"
