@@ -4,14 +4,15 @@ This will set up a local environment for development under Linux or Mac.
 
 1. Install [Docker](https://www.docker.com/)
 2. Set your desired `DEVMACHINE_BASE` in [environment.sh](environment.sh)
-3. Run the following:
+3. Ensure your hard drive has ~20GB of free space and is using ext4
+4. Run the following:
 
     ```
     source environment.sh
-    ./start_devmachine.sh
+    sudo -E ./start_devmachine.sh
     ```
 
-4. You can verify Docker environment is running with `docker ps`:
+5. You can verify Docker environment is running with `docker ps`:
 
     ```
     $ docker ps
@@ -28,3 +29,5 @@ This will set up a local environment for development under Linux or Mac.
     08b1d8247399        btrdb/cephdaemon          "/entrypoint.sh mgr"    14 minutes ago      Up 14 minutes                                                        devmachine-ceph-mgr
     5258556ca408        btrdb/cephdaemon          "/entrypoint.sh mon"    14 minutes ago      Up 14 minutes                                                        devmachine-ceph-mon
     ```
+
+6. You can stop your dev machine with `sudo -E ./teardown_devmachine` (make sure you still have `environment.sh` sourced)
