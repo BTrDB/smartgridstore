@@ -7,6 +7,7 @@ type DataSource interface {
 	//to return a stream more than once as long as the data within those streams
 	//does not overlap
 	Next() []Stream
+	Total() (total int64, totalKnown bool)
 }
 
 type Stream interface {

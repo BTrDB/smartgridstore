@@ -4,9 +4,11 @@ echo "determining version"
 
 set -ex
 
-PFX="dev-"
+PFX=""
 
-pushd $GOPATH/src/github.com/BTrDB/btrdb-server/btrdbd
+pushd $GOPATH/src/github.com/BTrDB/btrdb-server
+dep ensure
+cd btrdbd
 go build
 btrdb_ver=`./btrdbd -version`
 echo "BTrDB version is $btrdb_ver"
@@ -15,6 +17,7 @@ target_ver=$btrdb_ver
 popd
 
 pushd $GOPATH/src/github.com/BTrDB/mr-plotter
+dep ensure
 go build
 mrp_ver=`./mr-plotter -version`
 if [[ "$mrp_ver" != "$target_ver" ]]
@@ -31,7 +34,9 @@ popd
 
 popd
 
-pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/admincliserver
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore
+dep ensure
+cd tools/admincliserver
 go build
 cli_ver=`./admincliserver -version`
 if [[ "$cli_ver" != "$target_ver" ]]

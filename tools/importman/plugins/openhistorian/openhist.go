@@ -34,9 +34,13 @@ type datablockDesc struct {
 type openhist struct {
 	files  []*openhistfile
 	cursor int
+	total  int64
 }
 
 func NewOpenHistorian(filenames []string) (plugins.DataSource, error) {
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("no files specified")
+	}
 	rv := &openhist{}
 	for _, f := range filenames {
 		ohf, err := openFile(f)
@@ -44,6 +48,7 @@ func NewOpenHistorian(filenames []string) (plugins.DataSource, error) {
 			return nil, fmt.Errorf("error processing file %s: %v", f, err)
 		}
 		rv.files = append(rv.files, ohf)
+		rv.total += int64(ohf.pointsArchived)
 	}
 	return rv, nil
 }
@@ -69,7 +74,6 @@ func openFile(filename string) (*openhistfile, error) {
 	rv.pointsArchived = int32(binary.LittleEndian.Uint32(FAT[20:]))
 	rv.datablockSize = int32(binary.LittleEndian.Uint32(FAT[24:])) * 1024
 	rv.datablockCount = int32(binary.LittleEndian.Uint32(FAT[28:]))
-
 	rv.blocks = make([]datablockDesc, rv.datablockCount)
 	_, err = fl.Seek(-(32 + int64(rv.datablockCount)*12), os.SEEK_END)
 	br := bufio.NewReader(fl)
@@ -100,6 +104,9 @@ func (oh *openhist) Next() []plugins.Stream {
 	return rv
 }
 
+func (oh *openhist) Total() (int64, bool) {
+	return oh.total, true
+}
 func (oh *openhistfile) Streams() []plugins.Stream {
 	rvmap := make(map[int32]*ohstream)
 	epoch, err := time.Parse(time.RFC3339, "1995-01-01T00:00:00+00:00")
@@ -113,7 +120,7 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 		if !ok {
 			stream = &ohstream{
 				typeID: int(oh.blocks[datablock].typeID),
-				points: make([]plugins.Point, oh.datablockSize/10),
+				points: make([]plugins.Point, 0, oh.datablockSize/10),
 			}
 			rvmap[oh.blocks[datablock].typeID] = stream
 		}
@@ -128,8 +135,7 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 			//Lets also round the timestamp to the nearest millisecond
 			timestamp = ((timestamp + 500e3) / 1e6) * 1e6
 			value := math.Float32frombits(binary.LittleEndian.Uint32(dblock[offset+6:]))
-			stream.points[index].Time = timestamp
-			stream.points[index].Value = float64(value)
+			stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(value)})
 		}
 	}
 
@@ -181,5 +187,5 @@ func (s *ohstream) Next() (data []plugins.Point) {
 //If no total is available, return 0, false
 func (s *ohstream) Total() (total int64, totalKnown bool) {
 	//We could calculate this, but we don't right now
-	return 0, false
+	return int64(len(s.points)), true
 }
