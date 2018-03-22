@@ -10,7 +10,7 @@ export OSDBASE=$DEVMACHINE_BASE/ceph
 export ETCDBASE=$DEVMACHINE_BASE/etcd
 
 # which version of BTrDB and tools to install
-export VERSION=4.9.3
+export VERSION=4.9.4
 # on OSX we can't volume mount in storage because
 # the filesystem isn't compatible. This uses storage inside
 # the docker containers, which is probably fine, even across reboots
