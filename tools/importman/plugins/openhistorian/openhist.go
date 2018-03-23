@@ -18,7 +18,7 @@ import (
 const SpoofNanos = 33333333
 
 type openhistfile struct {
-	fl             *os.File
+	filename       string
 	pointsArchived int32
 	datablockSize  int32
 	datablockCount int32
@@ -58,6 +58,7 @@ func openFile(filename string) (*openhistfile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open file: %v", err)
 	}
+	defer fl.Close()
 	_, err = fl.Seek(-32, os.SEEK_END)
 	if err != nil {
 		return nil, fmt.Errorf("could not seek to FAT: %v", err)
@@ -69,7 +70,7 @@ func openFile(filename string) (*openhistfile, error) {
 	}
 
 	rv := &openhistfile{
-		fl: fl,
+		filename: filename,
 	}
 	rv.pointsArchived = int32(binary.LittleEndian.Uint32(FAT[20:]))
 	rv.datablockSize = int32(binary.LittleEndian.Uint32(FAT[24:])) * 1024
@@ -86,11 +87,13 @@ func openFile(filename string) (*openhistfile, error) {
 		rv.blocks[i].typeID = int32(binary.LittleEndian.Uint32(rec[:4]))
 		rv.blocks[i].timestamp = math.Float64frombits(binary.LittleEndian.Uint64(rec[4:]))
 	}
-	_, err = fl.Seek(0, os.SEEK_SET)
-	if err != nil {
-		return nil, fmt.Errorf("could not seek to begin: %v", err)
-	}
-	rv.reader = bufio.NewReaderSize(fl, 16*1024*1024)
+	//
+	// _, err = fl.Seek(0, os.SEEK_SET)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("could not seek to begin: %v", err)
+	// }
+	// rv.reader = bufio.NewReaderSize(fl, 16*1024*1024)
+	// rv.cursor = 0
 	rv.cursor = 0
 	return rv, nil
 }
@@ -108,6 +111,13 @@ func (oh *openhist) Total() (int64, bool) {
 	return oh.total, true
 }
 func (oh *openhistfile) Streams() []plugins.Stream {
+	fl, err := os.Open(oh.filename)
+	if err != nil {
+		fmt.Printf("could not reopen file %v\n", err)
+		os.Exit(1)
+	}
+	defer fl.Close()
+	oh.reader = bufio.NewReaderSize(fl, 16*1024*1024)
 	rvmap := make(map[int32]*ohstream)
 	epoch, err := time.Parse(time.RFC3339, "1995-01-01T00:00:00+00:00")
 	if err != nil {

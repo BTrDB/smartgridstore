@@ -100,7 +100,8 @@ func (dw *dataWriter) Enqueue(sz []plugins.Stream) {
 	}
 }
 func (dw *dataWriter) NoMoreStreams() {
-	fmt.Printf("total queued points is %d\n", dw.totalQueued)
+	//fmt.Printf("total queued points is %d\n", dw.totalQueued)
+	dw.bar.SetTotal(dw.totalQueued)
 	close(dw.input)
 }
 func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
