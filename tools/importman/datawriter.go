@@ -76,7 +76,7 @@ func (dw *dataWriter) Wait() {
 }
 
 func (dw *dataWriter) startWorkers() {
-	const numworkers = 500
+	const numworkers = 50
 	dw.wg.Add(numworkers)
 	for i := 0; i < numworkers; i++ {
 		go dw.startSingleWorkerLoop()
