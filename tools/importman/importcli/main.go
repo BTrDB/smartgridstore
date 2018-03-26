@@ -48,6 +48,10 @@ func main() {
 					Name:  "openhist_v1",
 					Usage: "treat files as OpenHistorian v1 files",
 				},
+				cli.StringFlag{
+					Name:  "metadata",
+					Usage: "specify stream metadata as CSV",
+				},
 			},
 		},
 	}
@@ -64,7 +68,7 @@ func importFiles(c *cli.Context) error {
 		os.Exit(1)
 	}
 	//We only support openhistorian files for now, so this is not hard
-	driver, err := openhist.NewOpenHistorian(c.Args())
+	driver, err := openhist.NewOpenHistorian(c.String("metadata"), c.Args())
 	if err != nil {
 		fmt.Printf("failed to load files: %v\n", err)
 		os.Exit(1)
