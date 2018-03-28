@@ -16,9 +16,6 @@ import (
 	"github.com/BTrDB/smartgridstore/tools/importman/plugins"
 )
 
-//The number of nanoseconds to add for each reading within a data block
-const SpoofNanos = 33333333
-
 type openhistfile struct {
 	filename       string
 	pointsArchived int32
@@ -42,9 +39,11 @@ type openhist struct {
 	skiplist map[uint32]bool
 }
 type metadatarec struct {
-	collection string
-	name       string
-	unit       string
+	collection  string
+	name        string
+	unit        string
+	phase       string
+	description string
 }
 
 func NewOpenHistorian(metadata string, filenames []string) (plugins.DataSource, error) {
@@ -89,7 +88,18 @@ func (oh *openhist) loadMetadata(filename string) error {
 		include := ln[1]
 		collection := ln[2]
 		name := ln[3]
-		unit := ln[4]
+		description := ""
+		if len(ln) > 4 {
+			description = ln[4]
+		}
+		phase := ""
+		if len(ln) > 5 {
+			phase = ln[5]
+		}
+		unit := "unknown"
+		if len(ln) > 6 {
+			unit = ln[6]
+		}
 		id, err := strconv.ParseInt(s_id, 10, 64)
 		if err != nil {
 			return fmt.Errorf("could not parse ID on line %d: %v", i, err)
@@ -102,9 +112,11 @@ func (oh *openhist) loadMetadata(filename string) error {
 		// name := cparts[len(cparts)-1]
 		// realcollection := strings.Join(cparts[:len(cparts)-1], "/")
 		results[uint32(id)] = &metadatarec{
-			collection: collection,
-			name:       name,
-			unit:       unit,
+			collection:  collection,
+			name:        name,
+			unit:        unit,
+			description: description,
+			phase:       phase,
 		}
 	}
 	oh.metadata = results
@@ -202,10 +214,15 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 			rvmap[oh.blocks[datablock].typeID] = stream
 		}
 		for offset := 0; (offset + 10) < int(oh.datablockSize); offset += 10 {
-			index := offset / 10
-			timestamp := epochnanos + int64(oh.blocks[datablock].timestamp*1e3)*1e6 + SpoofNanos*int64(index)
+			//index := offset / 10
+			//timestamp := epochnanos + int64(oh.blocks[datablock].timestamp*1e3)*1e6
+			timestamp := epochnanos + int64(binary.LittleEndian.Uint32(dblock[offset:]))*1e9
+
+			flags := binary.LittleEndian.Uint16(dblock[offset+4:])
+			timestamp += int64((flags >> 5)) * 1e6 //milliseconds
+			//fmt.Printf("timestamp: %d + %d: %s\n", timestamp, flags>>5, time.Unix(0, timestamp))
 			//Lets also round the timestamp to the nearest millisecond
-			timestamp = ((timestamp + 500e3) / 1e6) * 1e6
+			//timestamp = ((timestamp + 500e3) / 1e6) * 1e6
 			value := math.Float32frombits(binary.LittleEndian.Uint32(dblock[offset+6:]))
 			stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(value)})
 		}
@@ -252,7 +269,7 @@ func (s *ohstream) Annotations() map[string]string {
 	if s.metadata == nil {
 		return nil
 	}
-	return map[string]string{"unit": s.metadata.unit}
+	return map[string]string{"unit": s.metadata.unit, "description": s.metadata.description, "phase": s.metadata.phase}
 }
 
 //Next returns a chunk of data for insertion. If the data is empty it is
