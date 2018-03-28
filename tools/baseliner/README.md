@@ -5,7 +5,11 @@ This is a quick tool for determining how many synchrophasor-like loads a BTrDB s
 ## Overview
 
 Some parameters have to be modified in the code, but generally all testing can be done by just
-using the interactive prompt.
+using the interactive prompt. As with most BTrDB tools you set the server through an environment variable:
+
+```
+export BTRDB_ENDPOINTS=127.0.0.1:4410
+```
 
 When it starts up the program creates 10 workers, each with its own connection to BTrDB. You can
 then type in the number of total streams you would like the program to emulate and it will increase or
