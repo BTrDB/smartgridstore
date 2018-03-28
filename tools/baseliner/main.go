@@ -24,10 +24,10 @@ import (
 const InsertSize = 120
 const InsertInterval = 1 * time.Second
 
-const DelayBetweenWorkerSets = 3 * time.Second
+const DelayBetweenWorkerSets = 500 * time.Millisecond
 const WorkerSets = 10
 
-var StreamsPerWorker int64 = 300
+var StreamsPerWorker int64 = 5
 
 const DelayBetweenStreams = 15 * time.Millisecond
 
@@ -47,8 +47,8 @@ var windowmu sync.Mutex
 func main() {
 	exstart = time.Now()
 	rand.Seed(time.Now().UnixNano())
-	gsetcode = rand.Int() % 0xFFFF
-	fmt.Printf("SET CODE IS %04x\n", gsetcode)
+	gsetcode = rand.Int() % 0xFFFFFF
+	fmt.Printf("SET CODE IS %06x\n", gsetcode)
 	logSpanCh = make(chan span, 1000)
 	go logSpans()
 	go printAverages()
@@ -74,7 +74,7 @@ func printAverages() {
 		if e != nil {
 			fmt.Printf("percentile error: %v\n", e)
 		}
-		fmt.Printf("total_inserts=%d avg_time=%.3fms [+inserts=%d +avg_time=%.3fms p95=%.3fms]\n", tinserts, avg, dinserts, davg, p95)
+		fmt.Printf("total_inserts=%d avg_time=%.3fms [last15s: +inserts=%d +avg_time=%.3fms p95=%.3fms]\n", tinserts, avg, dinserts, davg, p95)
 		lastinserts = tinserts
 		lasttime = ttime
 	}
@@ -99,7 +99,7 @@ func dorun() {
 		if err != nil {
 			fmt.Println(err.Error())
 		} else {
-                        v /= WorkerSets
+			v /= WorkerSets
 			atomic.StoreInt64(&StreamsPerWorker, v)
 		}
 	}
@@ -133,7 +133,7 @@ func updateWorkerSet(number int) {
 
 func beginStream(ctx context.Context, db *btrdb.BTrDB) {
 	uu := uuid.NewRandom()
-	collection := fmt.Sprintf("sim/%04x/%16x", gsetcode, uint64(rand.Int63()))
+	collection := fmt.Sprintf("sim/%06x/%16x", gsetcode, uint64(rand.Int63()))
 	stream, err := db.Create(context.Background(), uu, collection, nil, nil)
 	if err != nil {
 		panic(err)
