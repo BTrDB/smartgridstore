@@ -26,25 +26,26 @@ type streamVal struct {
 }
 
 type dataWriter struct {
-	collectionPrefix string
-	db               *btrdb.BTrDB
-	input            chan plugins.Stream
-	done             chan struct{}
-	bardone          chan struct{}
-	streams          map[streamKey]*streamVal
-	totalQueued      int64
-	totalWritten     int64
-	totalInserts     int64
-	totalFailedFinds int64
-	unknown          bool
-	bar              *pb.ProgressBar
-	checkExisting    bool
-	mu               sync.Mutex
-	barmu            sync.Mutex
-	wg               sync.WaitGroup
+	collectionPrefix   string
+	db                 *btrdb.BTrDB
+	input              chan plugins.Stream
+	done               chan struct{}
+	bardone            chan struct{}
+	streams            map[streamKey]*streamVal
+	totalQueued        int64
+	totalWritten       int64
+	totalInserts       int64
+	totalFailedFinds   int64
+	unknown            bool
+	bar                *pb.ProgressBar
+	checkExisting      bool
+	obliterateExisting bool
+	mu                 sync.Mutex
+	barmu              sync.Mutex
+	wg                 sync.WaitGroup
 }
 
-func NewDataWriter(collectionPrefix string, checkExisting bool, total int64) *dataWriter {
+func NewDataWriter(collectionPrefix string, checkExisting bool, total int64, obliterate bool) *dataWriter {
 	if collectionPrefix == "" {
 		fmt.Printf("no collection specified\n")
 		os.Exit(1)
@@ -57,14 +58,15 @@ func NewDataWriter(collectionPrefix string, checkExisting bool, total int64) *da
 		os.Exit(1)
 	}
 	rv := &dataWriter{
-		db:               db,
-		collectionPrefix: collectionPrefix,
-		input:            make(chan plugins.Stream, 5000),
-		done:             make(chan struct{}),
-		bardone:          make(chan struct{}),
-		checkExisting:    checkExisting,
-		bar:              pb.Full.Start(int(total)),
-		streams:          make(map[streamKey]*streamVal),
+		db:                 db,
+		collectionPrefix:   collectionPrefix,
+		input:              make(chan plugins.Stream, 5000),
+		done:               make(chan struct{}),
+		bardone:            make(chan struct{}),
+		checkExisting:      checkExisting,
+		obliterateExisting: obliterate,
+		bar:                pb.Full.Start(int(total)),
+		streams:            make(map[streamKey]*streamVal),
 	}
 	go rv.startWorkers()
 	return rv
@@ -142,9 +144,18 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 				os.Exit(1)
 			}
 			if len(rv) == 1 {
-				mustcreate = false
-				str.stream = rv[0]
-				close(str.ready)
+				if dw.obliterateExisting {
+					err := rv[0].Obliterate(context.Background())
+					if err != nil {
+						fmt.Printf("could not obliterate stream: %v\n", err)
+						os.Exit(1)
+					}
+					//Go on and create it
+				} else {
+					mustcreate = false
+					str.stream = rv[0]
+					close(str.ready)
+				}
 			}
 		}
 		if mustcreate {

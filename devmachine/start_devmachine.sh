@@ -216,6 +216,7 @@ OPUT=$(docker run -d \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e CEPH_HOT_POOL=${HOTPOOL} \
+  -e BTRDB_ENABLE_OBLITERATE=YES \
   -e CEPH_DATA_POOL=${COLDPOOL} \
   -e MY_POD_IP=${SUB24}.21 \
   btrdb/db:${VERSION})
