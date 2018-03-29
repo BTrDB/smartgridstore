@@ -216,7 +216,8 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 		for offset := 0; (offset + 10) < int(oh.datablockSize); offset += 10 {
 			//index := offset / 10
 			//timestamp := epochnanos + int64(oh.blocks[datablock].timestamp*1e3)*1e6
-			timestamp := epochnanos + int64(binary.LittleEndian.Uint32(dblock[offset:]))*1e9
+			offset_ts := binary.LittleEndian.Uint32(dblock[offset:])
+			timestamp := epochnanos + int64(offset_ts)*1e9
 
 			flags := binary.LittleEndian.Uint16(dblock[offset+4:])
 			timestamp += int64((flags >> 5)) * 1e6 //milliseconds
@@ -224,7 +225,9 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 			//Lets also round the timestamp to the nearest millisecond
 			//timestamp = ((timestamp + 500e3) / 1e6) * 1e6
 			value := math.Float32frombits(binary.LittleEndian.Uint32(dblock[offset+6:]))
-			stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(value)})
+			if offset_ts != 0 {
+				stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(value)})
+			}
 		}
 	}
 
