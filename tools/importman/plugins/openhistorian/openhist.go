@@ -282,7 +282,9 @@ func (s *ohstream) Next() (data []plugins.Point) {
 		return nil
 	}
 	s.haveReturned = true
-	return s.points
+	rv := s.points
+	s.points = nil
+	return rv
 }
 
 //Total returns the total number of datapoints, used for progress estimation.

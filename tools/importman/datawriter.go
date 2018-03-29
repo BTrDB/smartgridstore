@@ -145,6 +145,7 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 			}
 			if len(rv) == 1 {
 				if dw.obliterateExisting {
+					fmt.Printf("obliterating %s:%s\n", sk.collection, sk.sertags)
 					err := rv[0].Obliterate(context.Background())
 					if err != nil {
 						fmt.Printf("could not obliterate stream: %v\n", err)
