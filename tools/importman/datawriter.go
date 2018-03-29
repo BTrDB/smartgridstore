@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/BTrDB/smartgridstore/tools/importman/plugins"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pborman/uuid"
 	btrdb "gopkg.in/btrdb.v4"
 	pb "gopkg.in/cheggaaa/pb.v2"
@@ -153,6 +154,7 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 					}
 					//Go on and create it
 				} else {
+					fmt.Printf("obliterate was false\n")
 					mustcreate = false
 					str.stream = rv[0]
 					close(str.ready)
@@ -164,7 +166,9 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 			uu := uuid.NewRandom()
 			stream, err := dw.db.Create(context.Background(), uu, sk.collection, s.Tags(), s.Annotations())
 			if err != nil {
-				fmt.Printf("could not create stream: %v\n", err)
+				fmt.Printf("could not create stream %s:%s >> %v\n", sk.collection, sk.sertags, err)
+				fmt.Printf("also real tags were: \n")
+				spew.Dump(s.Tags())
 				os.Exit(1)
 			}
 			str.stream = stream
