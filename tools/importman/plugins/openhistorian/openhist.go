@@ -263,7 +263,7 @@ func (s *ohstream) Tags() map[string]string {
 	if s.metadata == nil {
 		return map[string]string{"name": fmt.Sprintf("id_%d", s.typeID)}
 	}
-	return map[string]string{"name": s.metadata.name}
+	return map[string]string{"unit": s.metadata.unit, "name": s.metadata.name}
 }
 
 //Annotations contain additional metadata that is associated with the stream
