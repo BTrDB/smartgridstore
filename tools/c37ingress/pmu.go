@@ -80,9 +80,7 @@ func (p *PMU) dial() (err error) {
 
 func (p *PMU) process() error {
 	for {
-		fmt.Println("Start")
 		ch, frame, err := p.readFrame()
-		fmt.Println("Frame read")
 		if err != nil {
 			fmt.Printf("[%s] frame read error: %v\n", p.nickname, err)
 			p.conn.Close()
@@ -90,7 +88,6 @@ func (p *PMU) process() error {
 		}
 		_ = ch
 		cfg, ok := frame.(*Config12Frame)
-		fmt.Printf("Config frame: %v\n", ok)
 		if ok {
 			p.cfgmu.Lock()
 			p.cfgs[ch.IDCODE] = cfg
@@ -98,7 +95,6 @@ func (p *PMU) process() error {
 			p.sendStartCommand()
 		}
 		dat, ok := frame.(*DataFrame)
-		fmt.Printf("Data frame: %v\n", ok)
 		if ok {
 			p.outputmu.RLock()
 			ochan, ok := p.output[dat.IDCODE]
