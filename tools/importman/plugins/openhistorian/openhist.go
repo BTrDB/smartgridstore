@@ -4,6 +4,7 @@ package openhist
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/csv"
 	"fmt"
