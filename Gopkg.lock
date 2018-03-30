@@ -19,7 +19,7 @@
     "internal/jprovider",
     "internal/rez"
   ]
-  revision = "dc074536ec7a4e0917640674335277c985de883d"
+  revision = "c488b899f5f53390e102ce2f912d2256adb63364"
 
 [[projects]]
   branch = "master"
