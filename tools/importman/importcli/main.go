@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
-	//_ "net/http/pprof"
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/BTrDB/smartgridstore/tools"
 	"github.com/BTrDB/smartgridstore/tools/importman"
@@ -16,12 +18,12 @@ import (
 
 func main() {
 
-	// go func() {
-	// 	fmt.Println("==== PROFILING ENABLED ==========")
-	// 	runtime.SetBlockProfileRate(5000)
-	// 	err := http.ListenAndServe("0.0.0.0:6060", nil)
-	// 	panic(err)
-	// }()
+	go func() {
+		fmt.Println("==== PROFILING ENABLED ==========")
+		runtime.SetBlockProfileRate(5000)
+		err := http.ListenAndServe("0.0.0.0:6060", nil)
+		panic(err)
+	}()
 
 	app := cli.NewApp()
 	app.EnableBashCompletion = true

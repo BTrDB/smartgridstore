@@ -172,6 +172,7 @@ func (oh *openhist) Next() []plugins.Stream {
 		return nil
 	}
 	rv := oh.files[oh.cursor].Streams()
+	oh.files[oh.cursor] = nil
 	oh.cursor++
 	return rv
 }
