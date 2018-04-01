@@ -28,7 +28,7 @@ type streamVal struct {
 
 type dataWriter struct {
 	collectionPrefix   string
-	db                 *btrdb.BTrDB
+	gdb                *btrdb.BTrDB
 	input              chan plugins.Stream
 	done               chan struct{}
 	bardone            chan struct{}
@@ -59,7 +59,7 @@ func NewDataWriter(collectionPrefix string, checkExisting bool, total int64, obl
 		os.Exit(1)
 	}
 	rv := &dataWriter{
-		db:                 db,
+		gdb:                db,
 		collectionPrefix:   collectionPrefix,
 		input:              make(chan plugins.Stream, 5000),
 		done:               make(chan struct{}),
@@ -79,7 +79,8 @@ func (dw *dataWriter) Wait() {
 }
 
 func (dw *dataWriter) startWorkers() {
-	const numworkers = 50
+	const numworkers = 10
+
 	dw.wg.Add(numworkers)
 	for i := 0; i < numworkers; i++ {
 		go dw.startSingleWorkerLoop()
@@ -107,7 +108,7 @@ func (dw *dataWriter) NoMoreStreams() {
 	dw.bar.SetTotal(dw.totalQueued)
 	close(dw.input)
 }
-func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
+func (dw *dataWriter) getHandleFor(db *btrdb.BTrDB, s plugins.Stream) *btrdb.Stream {
 	if s == nil {
 		panic("nil stream")
 	}
@@ -135,7 +136,7 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 		mustcreate := true
 		if dw.checkExisting {
 			//Try lookup the stream
-			rv, err := dw.db.LookupStreams(context.Background(), sk.collection, false, opttags, nil)
+			rv, err := db.LookupStreams(context.Background(), sk.collection, false, opttags, nil)
 			if err != nil {
 				fmt.Printf("could not lookup streams: %v\n", err)
 				os.Exit(1)
@@ -164,7 +165,7 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 		if mustcreate {
 			var err error
 			uu := uuid.NewRandom()
-			stream, err := dw.db.Create(context.Background(), uu, sk.collection, s.Tags(), s.Annotations())
+			stream, err := db.Create(context.Background(), uu, sk.collection, s.Tags(), s.Annotations())
 			if err != nil {
 				fmt.Printf("could not create stream %s:%s >> %v\n", sk.collection, sk.sertags, err)
 				fmt.Printf("also real tags were: \n")
@@ -181,13 +182,20 @@ func (dw *dataWriter) getHandleFor(s plugins.Stream) *btrdb.Stream {
 	return str.stream
 }
 func (dw *dataWriter) startSingleWorkerLoop() {
+
+	//Work around BDP estimator by opening parallel connections
+	additionalConnection, err := btrdb.Connect(context.Background(), btrdb.EndpointsFromEnv()...)
+	if err != nil {
+		fmt.Printf("could not open additional DB connection: %v\n", err)
+		os.Exit(1)
+	}
 	for {
 		stream, ok := <-dw.input
 		if !ok {
 			dw.wg.Done()
 			return
 		}
-		dbstream := dw.getHandleFor(stream)
+		dbstream := dw.getHandleFor(additionalConnection, stream)
 		pts := stream.Next()
 		for len(pts) > 0 {
 			err := dbstream.InsertF(context.Background(), len(pts), func(i int) int64 {
