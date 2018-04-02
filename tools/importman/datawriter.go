@@ -79,7 +79,7 @@ func (dw *dataWriter) Wait() {
 }
 
 func (dw *dataWriter) startWorkers() {
-	const numworkers = 10
+	const numworkers = 50
 
 	dw.wg.Add(numworkers)
 	for i := 0; i < numworkers; i++ {
@@ -182,11 +182,12 @@ func (dw *dataWriter) getHandleFor(db *btrdb.BTrDB, s plugins.Stream) *btrdb.Str
 func (dw *dataWriter) startSingleWorkerLoop() {
 
 	//Work around BDP estimator by opening parallel connections
-	additionalConnection, err := btrdb.Connect(context.Background(), btrdb.EndpointsFromEnv()...)
-	if err != nil {
-		fmt.Printf("could not open additional DB connection: %v\n", err)
-		os.Exit(1)
-	}
+	// additionalConnection, err := btrdb.Connect(context.Background(), btrdb.EndpointsFromEnv()...)
+	// if err != nil {
+	// 	fmt.Printf("could not open additional DB connection: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	additionalConnection := dw.gdb
 	for {
 		stream, ok := <-dw.input
 		if !ok {
