@@ -17,9 +17,10 @@
     "internal/cephprovider",
     "internal/configprovider",
     "internal/jprovider",
+    "internal/mprovider",
     "internal/rez"
   ]
-  revision = "c488b899f5f53390e102ce2f912d2256adb63364"
+  revision = "b85705296e7c78a7d5d5be9e1e45fb7f682ebb81"
 
 [[projects]]
   branch = "master"
@@ -28,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "62504626e776001c53032dbbc8f89c65b98291a8"
+  revision = "7cdc4effad2d2ee21f7004f57cb08e70baab13fd"
 
 [[projects]]
   branch = "master"
@@ -61,7 +62,7 @@
     "pkg/logutil",
     "pkg/types"
   ]
-  revision = "8767e39bec1f99f51a232a246d81697d5754596e"
+  revision = "bf052ef4919dd894ba30524e80db48241bb6a9e9"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -281,7 +282,7 @@
     "poly1305",
     "ssh"
   ]
-  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
+  revision = "12892e8c234f4fe6f6803f052061de9057903bb2"
 
 [[projects]]
   branch = "master"
@@ -295,7 +296,7 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
+  revision = "b68f30494add4df6bd8ef5e82803f308e7f7c59c"
 
 [[projects]]
   branch = "master"

@@ -147,7 +147,6 @@ func (dw *dataWriter) getHandleFor(db *btrdb.BTrDB, s plugins.Stream) *btrdb.Str
 			}
 			if len(rv) == 1 {
 				if dw.obliterateExisting {
-					fmt.Printf("obliterating %s:%s\n", sk.collection, sk.sertags)
 					err := rv[0].Obliterate(context.Background())
 					if err != nil {
 						fmt.Printf("could not obliterate stream: %v\n", err)
@@ -155,7 +154,6 @@ func (dw *dataWriter) getHandleFor(db *btrdb.BTrDB, s plugins.Stream) *btrdb.Str
 					}
 					//Go on and create it
 				} else {
-					fmt.Printf("obliterate was false\n")
 					mustcreate = false
 					str.stream = rv[0]
 					close(str.ready)
