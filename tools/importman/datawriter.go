@@ -61,7 +61,7 @@ func NewDataWriter(collectionPrefix string, checkExisting bool, total int64, obl
 	rv := &dataWriter{
 		gdb:                db,
 		collectionPrefix:   collectionPrefix,
-		input:              make(chan plugins.Stream, 5000),
+		input:              make(chan plugins.Stream, 300),
 		done:               make(chan struct{}),
 		bardone:            make(chan struct{}),
 		checkExisting:      checkExisting,
