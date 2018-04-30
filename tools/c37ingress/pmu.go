@@ -92,6 +92,7 @@ func (p *PMU) process() error {
 			p.cfgmu.Lock()
 			p.cfgs[ch.IDCODE] = cfg
 			p.cfgmu.Unlock()
+			p.sendStartCommand()
 		}
 		dat, ok := frame.(*DataFrame)
 		if ok {
@@ -151,6 +152,19 @@ func (p *PMU) initialConfigure() {
 	c.SetSyncType(SYNC_TYPE_CMD)
 	c.FRAMESIZE = CommonHeaderLength + 4
 	c.CMD = uint16(CMD_SEND_CFG1)
+	err := WriteChecksummedFrame(c, p.conn)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (p *PMU) sendStartCommand() {
+	c := &CommandFrame{}
+	c.IDCODE = p.id
+	c.SetSOCToNow()
+	c.SetSyncType(SYNC_TYPE_CMD)
+	c.FRAMESIZE = CommonHeaderLength + 4
+	c.CMD = uint16(CMD_TURN_ON_TX)
 	err := WriteChecksummedFrame(c, p.conn)
 	if err != nil {
 		panic(err)
