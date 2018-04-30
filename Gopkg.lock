@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "v4"
+  name = "github.com/BTrDB/btrdb"
+  packages = ["."]
+  revision = "e4ca6b91c7641db3aa9f31a5ddfadbe52de5eb61"
+
+[[projects]]
   branch = "master"
   name = "github.com/BTrDB/btrdb-server"
   packages = [
@@ -157,6 +163,12 @@
   packages = ["pbutil"]
   revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/montanaflynn/stats"
+  packages = ["."]
+  revision = "eeaced052adbcfeea372c749c281099ed7fdaa38"
+  version = "0.2.0"
 
 [[projects]]
   name = "github.com/op/go-logging"
@@ -439,14 +451,14 @@
   version = "v0.1.2"
 
 [[projects]]
+  branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "4fc5987536ef307a24ca299aee7ae301cde3d221"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "04a10d32ff30be26877354c2f8cc6999ecb66c892713e039af1ec881de8b9ac5"
+  inputs-digest = "374defc6a73ce72f66ab3abbd6bd67a60d5c95acef11c9e72a80729c6b95e2ed"
   solver-name = "gps-cdcl"
   solver-version = 1

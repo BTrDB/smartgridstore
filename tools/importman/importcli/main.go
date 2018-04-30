@@ -35,6 +35,10 @@ func main() {
 			Name:  "continue",
 			Usage: "ensure data is merged into existing streams if they already exist",
 		},
+		cli.BoolFlag{
+			Name:  "erase",
+			Usage: "if a stream already exists, erase it. Implies --continue",
+		},
 	}
 	app.Version = fmt.Sprintf("%d.%d.%d", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
 	app.Commands = []cli.Command{
@@ -74,7 +78,12 @@ func importFiles(c *cli.Context) error {
 		os.Exit(1)
 	}
 	ttl, _ := driver.Total()
-	dw := importman.NewDataWriter(c.GlobalString("collection"), c.GlobalBool("continue"), ttl)
+	cont := c.GlobalBool("continue")
+	erase := c.GlobalBool("erase")
+	if erase {
+		cont = true
+	}
+	dw := importman.NewDataWriter(c.GlobalString("collection"), cont, ttl, erase)
 
 	then := time.Now()
 
