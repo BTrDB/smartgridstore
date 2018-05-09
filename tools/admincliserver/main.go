@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"io/ioutil"
@@ -9,11 +8,11 @@ import (
 	"net"
 	"os"
 	"regexp"
-	"runtime"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/BTrDB/smartgridstore/acl"
 	"github.com/BTrDB/smartgridstore/tools"
+	etcd "github.com/coreos/etcd/clientv3"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh"
 )
@@ -23,26 +22,21 @@ const VersionMinor = tools.VersionMinor
 const VersionPatch = tools.VersionPatch
 
 var etcdClient *etcd.Client
+var aclEngine *acl.ACLEngine
 
 var validUsername = regexp.MustCompile("^[a-z0-9_-]+$")
 
 func checkBootstrapPassword() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	resp, err := etcdClient.Get(ctx, "passwd/admin/hash")
-	cancel()
+	u, err := aclEngine.GetBuiltinUser("admin")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	if resp.Count != 0 {
-		return
-	}
-	fmt.Printf("== WARNING, CREATING DEFAULT ADMIN ACCOUNT!! ==\n")
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-	hsh, _ := bcrypt.GenerateFromPassword([]byte("sgs-default-admin-password"), bcrypt.DefaultCost)
-	_, err = etcdClient.Put(ctx, "passwd/admin/hash", string(hsh))
-	cancel()
-	if err != nil {
-		log.Fatal(err)
+	if u == nil {
+		fmt.Printf("== WARNING, CREATING DEFAULT ADMIN ACCOUNT!! ==\n")
+		err := aclEngine.CreateDefaultAdminUser("sgs-default-admin-password")
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -51,24 +45,22 @@ func passwordAuth(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
 		time.Sleep(1 * time.Second)
 		return nil, fmt.Errorf("invalid username %q", c.User())
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	resp, err := etcdClient.Get(ctx, fmt.Sprintf("passwd/%s/hash", c.User()))
-	cancel()
+	if c.User() != "admin" {
+		time.Sleep(1 * time.Second)
+		return nil, fmt.Errorf("password rejected for %q", c.User())
+	}
+	u, err := aclEngine.GetBuiltinUser("admin")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	for _, ev := range resp.Kvs {
-		err := bcrypt.CompareHashAndPassword(ev.Value, pass)
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			return nil, fmt.Errorf("password rejected for %q", c.User())
-		} else {
-			fmt.Printf("[audit] password accepted for %q", c.User())
-			return nil, nil
-		}
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), pass)
+	if err != nil {
+		time.Sleep(1 * time.Second)
+		return nil, fmt.Errorf("password rejected for %q", c.User())
+	} else {
+		fmt.Printf("[audit] password accepted for %q", c.User())
+		return nil, nil
 	}
-	time.Sleep(1 * time.Second)
-	return nil, fmt.Errorf("password rejected for %q", c.User())
 }
 
 func main() {
@@ -89,14 +81,15 @@ func main() {
 		fmt.Printf("Could not connect to etcd: %v\n", err)
 		os.Exit(1)
 	}
+	aclEngine = acl.NewACLEngine("btrdb", etcdClient)
 	checkBootstrapPassword()
 
-	go func() {
-		for {
-			time.Sleep(10 * time.Second)
-			fmt.Printf("num goroutines: %d\n", runtime.NumGoroutine())
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		time.Sleep(10 * time.Second)
+	// 		fmt.Printf("num goroutines: %d\n", runtime.NumGoroutine())
+	// 	}
+	// }()
 	config := &ssh.ServerConfig{
 		PasswordCallback: passwordAuth,
 	}

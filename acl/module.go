@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/BTrDB/smartgridstore/admincli"
+	etcd "github.com/coreos/etcd/clientv3"
 )
 
 type usersModule struct {
@@ -22,7 +22,7 @@ type singleUserModule struct {
 }
 
 func NewACLModule(c *etcd.Client, loggedInUser string) admincli.CLIModule {
-	aclEngine := NewACLEngine(c)
+	aclEngine := NewACLEngine("btrdb", c)
 	add := func(ctx context.Context, w io.Writer, a ...string) bool {
 		return adduser(loggedInUser, aclEngine, ctx, w, a...)
 	}
@@ -49,6 +49,131 @@ func NewACLModule(c *etcd.Client, loggedInUser string) admincli.CLIModule {
 				MRun:      del,
 				MRunnable: true,
 			},
+			&admincli.GenericCLIModule{
+				MName:     "addgroup",
+				MHint:     "add a new group",
+				MUsage:    " groupname",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					fmt.Printf("args len is %d\n", len(args))
+					if len(args) != 1 {
+						return false
+					}
+					err := aclEngine.AddGroup(args[0])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "delgroup",
+				MHint:     "remove a group",
+				MUsage:    " groupname",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 1 {
+						return false
+					}
+					err := aclEngine.DeleteGroup(args[0])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "addprefixtogroup",
+				MHint:     "add a permitted collection prefix to a group",
+				MUsage:    " groupname prefix",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 2 {
+						return false
+					}
+					err := aclEngine.AddPrefixToGroup(args[0], args[1])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "delprefixfromgroup",
+				MHint:     "remove a permitted collection prefix from a group",
+				MUsage:    " groupname prefix",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 2 {
+						return false
+					}
+					err := aclEngine.RemovePrefixFromGroup(args[0], args[1])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "addcapabilitytogroup",
+				MHint:     "add a capability (plotter,api,insert,read,delete,obliterate) to a group",
+				MUsage:    " groupname capability",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 2 {
+						return false
+					}
+					err := aclEngine.AddCapabilityToGroup(args[0], args[1])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "delcapabilityfromgroup",
+				MHint:     "remove a capability from a group",
+				MUsage:    " groupname capability",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 2 {
+						return false
+					}
+					err := aclEngine.RemoveCapabilityFromGroup(args[0], args[1])
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+					}
+					return true
+				},
+			},
+			&admincli.GenericCLIModule{
+				MName:     "listgroups",
+				MHint:     "lists groups",
+				MUsage:    " ",
+				MRunnable: true,
+				MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+					if len(args) != 0 {
+						return false
+					}
+					grps, err := aclEngine.GetGroups()
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+						return true
+					}
+					for _, g := range grps {
+						fmt.Fprintf(w, "%s:\n", g.Name)
+						fmt.Fprintf(w, " Capabilities: ")
+						for _, c := range g.Capabilities {
+							fmt.Fprintf(w, "%s ", c)
+						}
+						fmt.Fprintf(w, "\n Prefixes:\n")
+						for _, p := range g.Prefixes {
+							fmt.Fprintf(w, "  %q\n", p)
+						}
+					}
+					return true
+				},
+			},
 			users,
 		},
 	}
@@ -57,10 +182,6 @@ func NewACLModule(c *etcd.Client, loggedInUser string) admincli.CLIModule {
 func adduser(curUser string, e *ACLEngine, ctx context.Context, w io.Writer, args ...string) bool {
 	if len(args) != 2 {
 		return false
-	}
-	if err := e.Test(curUser, PCreateUser); err != nil {
-		fmt.Fprintf(w, "failed: %v\n", err)
-		return true
 	}
 	err := e.CreateUser(args[0], args[1])
 	if err != nil {
@@ -80,10 +201,6 @@ func deluser(curUser string, e *ACLEngine, ctx context.Context, w io.Writer, arg
 	}
 	if args[0] == "admin" {
 		fmt.Fprintf(w, "failed: you cannot delete the admin account\n")
-		return true
-	}
-	if err := e.Test(curUser, PDeleteUser); err != nil {
-		fmt.Fprintf(w, "failed: %v\n", err)
 		return true
 	}
 	err := e.DeleteUser(args[0])
@@ -168,12 +285,6 @@ func genUserCommands(su *singleUserModule) []admincli.CLIModule {
 					return false
 				}
 				fmt.Printf("logged in user is %q and username is %q\n", su.loggedInUser, su.username)
-				if su.loggedInUser != su.username {
-					if err := su.e.Test(su.loggedInUser, PChangePassword); err != nil {
-						fmt.Fprintf(w, "failed: %v\n", err)
-						return true
-					}
-				}
 				if err := su.e.SetPassword(su.username, args[0]); err != nil {
 					fmt.Fprintf(w, "failed: %v\n", err)
 					return true
@@ -183,22 +294,34 @@ func genUserCommands(su *singleUserModule) []admincli.CLIModule {
 			},
 		},
 		&admincli.GenericCLIModule{
-			MName:     "allow",
-			MHint:     "add user permissions",
-			MUsage:    " key[=value] [key[=value]] ...",
+			MName:     "addtogroup",
+			MHint:     "add a user to a group",
+			MUsage:    " group [group] ...",
 			MRunnable: true,
 			MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
-				fmt.Fprintf(w, "not implemented")
+				for _, g := range args {
+					err := su.e.AddUserToGroup(su.username, g)
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+						return true
+					}
+				}
 				return true
 			},
 		},
 		&admincli.GenericCLIModule{
-			MName:     "revoke",
-			MHint:     "revoke user permissions",
-			MUsage:    " key [key] [key] ...",
+			MName:     "removefromgroup",
+			MHint:     "remove a user from a group",
+			MUsage:    " group [group] ...",
 			MRunnable: true,
 			MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
-				fmt.Fprintf(w, "not implemented")
+				for _, g := range args {
+					err := su.e.RemoveUserFromGroup(su.username, g)
+					if err != nil {
+						fmt.Fprintf(w, "failed: %v\n", err)
+						return true
+					}
+				}
 				return true
 			},
 		},
@@ -208,7 +331,23 @@ func genUserCommands(su *singleUserModule) []admincli.CLIModule {
 			MUsage:    "",
 			MRunnable: true,
 			MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
-				fmt.Fprintf(w, "not implemented")
+				u, err := su.e.GetBuiltinUser(su.username)
+				if err != nil {
+					fmt.Fprintf(w, "failed: %v\n", err)
+					return true
+				}
+				fmt.Fprintf(w, "Groups: ")
+				for _, g := range u.Groups {
+					fmt.Fprintf(w, "%s ", g)
+				}
+				fmt.Fprintf(w, "\nCapabilities: ")
+				for _, c := range u.Capabilities {
+					fmt.Fprintf(w, "%s ", c)
+				}
+				fmt.Fprintf(w, "\nPrefixes:\n")
+				for _, p := range u.Prefixes {
+					fmt.Fprintf(w, " %q\n", p)
+				}
 				return true
 			},
 		},
