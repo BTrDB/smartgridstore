@@ -81,6 +81,9 @@ func (a *apiProvider) writeEndpoint(ctx context.Context, uu uuid.UUID) (*btrdb.E
 func (a *apiProvider) readEndpoint(ctx context.Context, uu uuid.UUID) (*btrdb.Endpoint, error) {
 	return a.downstream.ReadEndpointFor(ctx, uu)
 }
+func (a *apiProvider) anyEndpoint(ctx context.Context) (*btrdb.Endpoint, error) {
+	return a.downstream.GetAnyEndpoint(ctx)
+}
 
 // func (a *apiProvider) getUser(ctx context.Context) (*User, error) {
 // 	return nil, nil
@@ -175,27 +178,31 @@ func (a *apiProvider) RawValues(p *pb.RawValuesParams, r pb.BTrDB_RawValuesServe
 	if err != nil {
 		return err
 	}
-	ds, err := a.readEndpoint(ctx, uu)
-	if err != nil {
-		return err
-	}
-	client, err := ds.GetGRPC().RawValues(ctx, p)
-	if err != nil {
-		return err
-	}
-	for {
-		resp, err := client.Recv()
-		if err == io.EOF {
-			return nil
-		}
+	var ep *btrdb.Endpoint
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, uu)
 		if err != nil {
-			return err
+			continue
 		}
-		err = r.Send(resp)
+		client, err := ep.GetGRPC().RawValues(ctx, p)
 		if err != nil {
-			return err
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			err = r.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return err
 }
 func (a *apiProvider) AlignedWindows(p *pb.AlignedWindowsParams, r pb.BTrDB_AlignedWindowsServer) error {
 	ctx := r.Context()
@@ -204,27 +211,31 @@ func (a *apiProvider) AlignedWindows(p *pb.AlignedWindowsParams, r pb.BTrDB_Alig
 	if err != nil {
 		return err
 	}
-	ds, err := a.readEndpoint(ctx, uu)
-	if err != nil {
-		return err
-	}
-	client, err := ds.GetGRPC().AlignedWindows(ctx, p)
-	if err != nil {
-		return err
-	}
-	for {
-		resp, err := client.Recv()
-		if err == io.EOF {
-			return nil
-		}
+	var ep *btrdb.Endpoint
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, uu)
 		if err != nil {
-			return err
+			continue
 		}
-		err = r.Send(resp)
+		client, err := ep.GetGRPC().AlignedWindows(ctx, p)
 		if err != nil {
-			return err
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			err = r.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return err
 }
 func (a *apiProvider) Windows(p *pb.WindowsParams, r pb.BTrDB_WindowsServer) error {
 	ctx := r.Context()
@@ -232,38 +243,64 @@ func (a *apiProvider) Windows(p *pb.WindowsParams, r pb.BTrDB_WindowsServer) err
 	if err != nil {
 		return err
 	}
-	ds, err := a.readEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return err
-	}
-	client, err := ds.GetGRPC().Windows(ctx, p)
-	if err != nil {
-		return err
-	}
-	for {
-		resp, err := client.Recv()
-		if err == io.EOF {
-			return nil
-		}
+	var ep *btrdb.Endpoint
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, p.Uuid)
 		if err != nil {
-			return err
+			continue
 		}
-		err = r.Send(resp)
+		client, err := ep.GetGRPC().Windows(ctx, p)
 		if err != nil {
-			return err
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			err = r.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return err
 }
 func (a *apiProvider) StreamInfo(ctx context.Context, p *pb.StreamInfoParams) (*pb.StreamInfoResponse, error) {
 	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "StreamInfo")
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.readEndpoint(ctx, p.GetUuid())
+	var ep *btrdb.Endpoint
+	var rv *pb.StreamInfoResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, p.Uuid)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().StreamInfo(ctx, p)
+	}
+	return rv, err
+}
+
+func (a *apiProvider) GetMetadataUsage(ctx context.Context, p *pb.MetadataUsageParams) (*pb.MetadataUsageResponse, error) {
+	err := a.checkPermissionsByCollection(ctx, p.Prefix, "GetMetadataUsage")
 	if err != nil {
 		return nil, err
 	}
-	return ds.GetGRPC().StreamInfo(ctx, p)
+	var ep *btrdb.Endpoint
+	var rv *pb.MetadataUsageResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.anyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().GetMetadataUsage(ctx, p)
+	}
+	return rv, err
 }
 
 func (a *apiProvider) SetStreamAnnotations(ctx context.Context, p *pb.SetStreamAnnotationsParams) (*pb.SetStreamAnnotationsResponse, error) {
@@ -271,11 +308,16 @@ func (a *apiProvider) SetStreamAnnotations(ctx context.Context, p *pb.SetStreamA
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.SetStreamAnnotationsResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.Uuid)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().SetStreamAnnotations(ctx, p)
 	}
-	return ds.GetGRPC().SetStreamAnnotations(ctx, p)
+	return rv, err
 }
 func (a *apiProvider) Changes(p *pb.ChangesParams, r pb.BTrDB_ChangesServer) error {
 	ctx := r.Context()
@@ -283,114 +325,134 @@ func (a *apiProvider) Changes(p *pb.ChangesParams, r pb.BTrDB_ChangesServer) err
 	if err != nil {
 		return err
 	}
-	ds, err := a.readEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return err
-	}
-	client, err := ds.GetGRPC().Changes(ctx, p)
-	if err != nil {
-		return err
-	}
-	for {
-		resp, err := client.Recv()
-		if err == io.EOF {
-			return nil
-		}
+	var ep *btrdb.Endpoint
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, p.Uuid)
 		if err != nil {
-			return err
+			continue
 		}
-		err = r.Send(resp)
+		client, err := ep.GetGRPC().Changes(ctx, p)
 		if err != nil {
-			return err
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			err = r.Send(resp)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return err
 }
 func (a *apiProvider) Create(ctx context.Context, p *pb.CreateParams) (*pb.CreateResponse, error) {
 	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Create")
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.CreateResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.Uuid)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Create(ctx, p)
 	}
-	return ds.GetGRPC().Create(ctx, p)
+	return rv, err
 }
 func (a *apiProvider) ListCollections(ctx context.Context, p *pb.ListCollectionsParams) (*pb.ListCollectionsResponse, error) {
-	// fmt.Printf("Got LC\n")
-	// fmt.Printf("context on LC was: %v\n", ctx)
-	// md, ok := metadata.FromIncomingContext(ctx)
-	// fmt.Printf("ok was: %v\n", ok)
-	// fmt.Printf("explicit auth value: %v\n", md["authorization"])
-	ds, err := a.readEndpoint(ctx, uuid.NewRandom())
+	var ep *btrdb.Endpoint
+	var rv *pb.ListCollectionsResponse
+	var err error
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.anyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().ListCollections(ctx, p)
+	}
 	if err != nil {
 		return nil, err
 	}
-	lcr, err := ds.GetGRPC().ListCollections(ctx, p)
-	if err != nil {
-		return nil, err
-	}
-	filtCollections := make([]string, 0, len(lcr.Collections))
-	for _, col := range lcr.Collections {
+	filtCollections := make([]string, 0, len(rv.Collections))
+	for _, col := range rv.Collections {
 		cerr := a.checkPermissionsByCollection(ctx, col, "ListCollections")
 		if cerr != nil {
 			continue
 		}
 		filtCollections = append(filtCollections, col)
 	}
-	lcr.Collections = filtCollections
-	return lcr, err
+	rv.Collections = filtCollections
+	return rv, err
 }
 func (a *apiProvider) LookupStreams(p *pb.LookupStreamsParams, r pb.BTrDB_LookupStreamsServer) error {
 	ctx := r.Context()
-	ds, err := a.readEndpoint(ctx, uuid.NewRandom())
-	if err != nil {
-		return err
-	}
-	client, err := ds.GetGRPC().LookupStreams(ctx, p)
-	if err != nil {
-		return err
-	}
-	for {
-		resp, err := client.Recv()
-		if err == io.EOF {
-			return nil
-		}
+	var ep *btrdb.Endpoint
+	var err error
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.anyEndpoint(ctx)
 		if err != nil {
-			return err
+			continue
 		}
-		if resp.Stat != nil {
-			cerr := r.Send(resp)
-			if cerr != nil {
-				return cerr
+		client, err := ep.GetGRPC().LookupStreams(ctx, p)
+		if err != nil {
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if resp.Stat != nil {
+				cerr := r.Send(resp)
+				if cerr != nil {
+					return cerr
+				}
+			}
+			//Filter the results by permitted ones
+			nr := make([]*pb.StreamDescriptor, 0, len(resp.Results))
+			for _, res := range resp.Results {
+				sterr := a.checkPermissionsByCollection(ctx, res.Collection, "LookupStreams")
+				if sterr != nil {
+					continue
+				}
+				nr = append(nr, res)
+			}
+			resp.Results = nr
+			err = r.Send(resp)
+			if err != nil {
+				return err
 			}
 		}
-		//Filter the results by permitted ones
-		nr := make([]*pb.StreamDescriptor, 0, len(resp.Results))
-		for _, res := range resp.Results {
-			sterr := a.checkPermissionsByCollection(ctx, res.Collection, "LookupStreams")
-			if sterr != nil {
-				continue
-			}
-			nr = append(nr, res)
-		}
-		resp.Results = nr
-		err = r.Send(resp)
-		if err != nil {
-			return err
-		}
 	}
+	return err
 }
 func (a *apiProvider) Nearest(ctx context.Context, p *pb.NearestParams) (*pb.NearestResponse, error) {
+
 	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Nearest")
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.readEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.NearestResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.readEndpoint(ctx, p.Uuid)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Nearest(ctx, p)
 	}
-	return ds.GetGRPC().Nearest(ctx, p)
+	return rv, err
 }
 
 func (a *apiProvider) Insert(ctx context.Context, p *pb.InsertParams) (*pb.InsertResponse, error) {
@@ -398,23 +460,32 @@ func (a *apiProvider) Insert(ctx context.Context, p *pb.InsertParams) (*pb.Inser
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.InsertResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.Uuid)
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Insert(ctx, p)
 	}
-	rv, e := ds.GetGRPC().Insert(ctx, p)
-	return rv, e
+	return rv, err
 }
 func (a *apiProvider) Delete(ctx context.Context, p *pb.DeleteParams) (*pb.DeleteResponse, error) {
 	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Delete")
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.DeleteResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.GetUuid())
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Delete(ctx, p)
 	}
-	return ds.GetGRPC().Delete(ctx, p)
+	return rv, err
 }
 
 func (a *apiProvider) Flush(ctx context.Context, p *pb.FlushParams) (*pb.FlushResponse, error) {
@@ -422,12 +493,16 @@ func (a *apiProvider) Flush(ctx context.Context, p *pb.FlushParams) (*pb.FlushRe
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.FlushResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.GetUuid())
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Flush(ctx, p)
 	}
-	rv, e := ds.GetGRPC().Flush(ctx, p)
-	return rv, e
+	return rv, err
 }
 
 func (a *apiProvider) Obliterate(ctx context.Context, p *pb.ObliterateParams) (*pb.ObliterateResponse, error) {
@@ -435,12 +510,16 @@ func (a *apiProvider) Obliterate(ctx context.Context, p *pb.ObliterateParams) (*
 	if err != nil {
 		return nil, err
 	}
-	ds, err := a.writeEndpoint(ctx, p.GetUuid())
-	if err != nil {
-		return nil, err
+	var ep *btrdb.Endpoint
+	var rv *pb.ObliterateResponse
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.writeEndpoint(ctx, p.GetUuid())
+		if err != nil {
+			continue
+		}
+		rv, err = ep.GetGRPC().Obliterate(ctx, p)
 	}
-	rv, e := ds.GetGRPC().Obliterate(ctx, p)
-	return rv, e
+	return rv, err
 }
 
 func (a *apiProvider) FaultInject(ctx context.Context, p *pb.FaultInjectParams) (*pb.FaultInjectResponse, error) {
@@ -458,7 +537,6 @@ func (a *apiProvider) FaultInject(ctx context.Context, p *pb.FaultInjectParams) 
 
 func (a *apiProvider) Info(ctx context.Context, params *pb.InfoParams) (*pb.InfoResponse, error) {
 	//We do not forward the info call, as we want the client to always contact us
-	// nevertheless tihs PARTICULAR repsonse is a hack
 	ourip := "127.0.0.1:4410"
 	if ex := os.Getenv("EXTERNAL_ADDRESS"); ex != "" {
 		ourip = ex

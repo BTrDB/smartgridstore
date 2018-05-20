@@ -225,9 +225,13 @@ func (oh *openhistfile) Streams() []plugins.Stream {
 			//fmt.Printf("timestamp: %d + %d: %s\n", timestamp, flags>>5, time.Unix(0, timestamp))
 			//Lets also round the timestamp to the nearest millisecond
 			//timestamp = ((timestamp + 500e3) / 1e6) * 1e6
+
+			//timestamp = time.Now().UnixNano()
 			value := math.Float32frombits(binary.LittleEndian.Uint32(dblock[offset+6:]))
+			_ = value
 			if offset_ts != 0 {
 				stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(value)})
+				//stream.points = append(stream.points, plugins.Point{Time: timestamp, Value: float64(timestamp)})
 			}
 		}
 	}

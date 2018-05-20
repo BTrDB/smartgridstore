@@ -126,6 +126,14 @@ func (e *ACLEngine) GetGroup(name string) (*Group, error) {
 		return nil, err
 	}
 	if !found {
+		if name == "public" {
+			//The public group always exists
+			return &Group{
+				Name:         "public",
+				Capabilities: []string{"plotter"},
+				Prefixes:     []string{""},
+			}, nil
+		}
 		return nil, nil
 	}
 	return g, nil
@@ -294,6 +302,18 @@ type User struct {
 	//Calculated at load time
 	Prefixes     []string
 	Capabilities []string
+}
+
+func (e *ACLEngine) WatchForAuthChanges(ctx context.Context) (chan struct{}, error) {
+	rv := make(chan struct{}, 10)
+	go func() {
+		wc := e.c.Watch(ctx, fmt.Sprintf("%s/auth/", e.prefix), etcd.WithPrefix())
+		for _ = range wc {
+			rv <- struct{}{}
+		}
+		panic("watch ended")
+	}()
+	return rv, nil
 }
 
 //Returns false, nil, nil if password is incorrect or user does not exist
