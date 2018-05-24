@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "d97a6759cef4ab95833303dde2688c21084d38c6"
+  revision = "5e4157bef49248520d00f4e6521208ebadb1b454"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "a8a54c81c52acd06c75a77c2d92de35157a0e12c"
+  revision = "6d3d6f82c92d9656bb03d5281ab9a0c72b9f355e"
 
 [[projects]]
   branch = "master"
@@ -65,7 +65,7 @@
     "raft",
     "raft/raftpb"
   ]
-  revision = "9a88815c18abb9df8286bc9cb9c527a1509749de"
+  revision = "20cf7f4d5b7af698dd216b228a53d3e192e32d1f"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -123,8 +123,8 @@
     "runtime/internal",
     "utilities"
   ]
-  revision = "07f5e79768022f9a3265235f0db4ac8c3f675fec"
-  version = "v1.3.1"
+  revision = "92583770e3f01b09a0d3e9bdf64321d8bebd48f2"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -177,8 +177,8 @@
 [[projects]]
   name = "github.com/montanaflynn/stats"
   packages = ["."]
-  revision = "eeaced052adbcfeea372c749c281099ed7fdaa38"
-  version = "0.2.0"
+  revision = "1bf9dbcd8cbe1fdb75add3785b1d4a9a646269ab"
+  version = "0.3.0"
 
 [[projects]]
   name = "github.com/op/go-logging"
@@ -310,7 +310,7 @@
     "poly1305",
     "ssh"
   ]
-  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+  revision = "159ae71589f303f9fbfd7528413e0fe944b9c1cb"
 
 [[projects]]
   branch = "master"
@@ -324,13 +324,13 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "57065200b4b034a1c8ad54ff77069408c2218ae6"
+  revision = "9ef9f5bb98a1fdc41f8cf6c250a4404b4085e389"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
+  revision = "04b83988a018ef3ebffe1485df79d6499b76a4b4"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -360,7 +360,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "11a468237815f3a3ddf9f7c6e8b6b3b382a24d15"
+  revision = "694d95ba50e67b2e363f3483057db5d4910c18f9"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -418,8 +418,8 @@
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v1"
   packages = ["."]
-  revision = "1f7f140e48255d0e448ec06de47d4545b8ec1f85"
-  version = "v1.0.24"
+  revision = "2af8bbdea9e99e83b3ac400d8f6b6d1b8cbbf338"
+  version = "v1.0.25"
 
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v2"
