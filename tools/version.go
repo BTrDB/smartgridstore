@@ -2,4 +2,4 @@ package tools
 
 const VersionMajor = 4
 const VersionMinor = 10
-const VersionPatch = 0
+const VersionPatch = 1
