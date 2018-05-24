@@ -20,6 +20,10 @@ type SiteConfig struct {
 			BTrDBHotPool  string `yaml:"btrdbHotPool"`
 			RBDPool       string `yaml:"rbdPool"`
 		} `yaml:"ceph"`
+		Etcd struct {
+			Nodes   []string `yaml:"nodes"`
+			Version string   `yaml:"version"`
+		}
 		ExternalIPs []string `yaml:"externalIPs"`
 	} `yaml:"siteInfo"`
 }
@@ -29,7 +33,7 @@ kind: SiteConfig
 # this is the kubernetes namespace that you are deploying into
 targetNamespace: sgs
 containers:
-  #this can be 'development'
+  #this can be 'development' or 'release'
   channel: release
   imagePullPolicy: Always
 siteInfo:
@@ -47,6 +51,17 @@ siteInfo:
     # the RBD pool is used to provision persistent storage for
     # kubernetes pods. It can use spinning metal.
     rbdPool: rbd
+
+  etcd:
+    # which nodes should run etcd servers. There must be three entries
+    # here, so if you have fewer nodes, you can have duplicates. The node
+    # names must match the output from 'kubectl get nodes'
+    nodes:
+    - host0
+    - host1
+    - host2
+    # which version of etcd to deploy
+    version: v3.3.5
 
   # the external IPs listed here are where the services can be contacted
   # e.g for the plotter or the BTrDB API

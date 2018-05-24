@@ -49,8 +49,8 @@ fi
 echo "[INFO] pulling containers"
 docker pull btrdb/cephdaemon 2>&1 | sed "s/^/[INFO][PULL] /"
 docker pull btrdb/stubetcd:latest 2>&1 | sed "s/^/[INFO][PULL] /"
-docker pull btrdb/db:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
-docker pull btrdb/apifrontend:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
+docker pull btrdb/${PREFIX}db:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
+docker pull btrdb/${PREFIX}apifrontend:${VERSION} 2>&1 | sed "s/^/[INFO][PULL] /"
 
 # all containers are gone, lets create new ones
 OPUT=$(docker run -d --net ${DOCKERNET} --ip ${SUB24}.5 \
@@ -199,7 +199,7 @@ docker run -it \
   -e BTRDB_BLOCK_CACHE=62500 \
   -e CEPH_DATA_POOL=${COLDPOOL} \
   -e MY_POD_IP=${SUB24}.21 \
-  btrdb/db:${VERSION} ensuredb | sed "s/^/[INFO][DB INIT] /"
+  btrdb/${PREFIX}db:${VERSION} ensuredb | sed "s/^/[INFO][DB INIT] /"
 
 if [[ $? != 0 ]]
 then
@@ -220,7 +220,7 @@ OPUT=$(docker run -d \
   -e BTRDB_ENABLE_OBLITERATE=YES \
   -e CEPH_DATA_POOL=${COLDPOOL} \
   -e MY_POD_IP=${SUB24}.21 \
-  btrdb/db:${VERSION})
+  btrdb/${PREFIX}db:${VERSION})
 
 if [[ $? != 0 ]]
 then
@@ -251,7 +251,7 @@ OPUT=$(docker run -d \
   -v ${OSDBASE}/etc/adminserver:/etc/adminserver \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e BTRDB_ENDPOINTS=${SUB24}.21:4410 \
-  btrdb/console:${VERSION})
+  btrdb/${PREFIX}console:${VERSION})
 
 if [[ $? != 0 ]]
 then
@@ -270,7 +270,7 @@ OPUT=$(docker run -d \
   --restart always \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e BTRDB_ENDPOINTS=${SUB24}.21:4410 \
-  btrdb/mrplotter:${VERSION})
+  btrdb/${PREFIX}mrplotter:${VERSION})
 
 if [[ $? != 0 ]]
 then
@@ -290,7 +290,7 @@ OPUT=$(docker run -d \
   --ip ${SUB24}.27 \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e BTRDB_ENDPOINTS=${SUB24}.21:4410 \
-  btrdb/apifrontend:${VERSION} 2>&1)
+  btrdb/${PREFIX}apifrontend:${VERSION} 2>&1)
 
 if [[ $? != 0 ]]
 then

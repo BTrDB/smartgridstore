@@ -23,13 +23,9 @@ var Manifest []*ManifestEntry = []*ManifestEntry{
 	&ManifestEntry{Yep, "c37ingress.deployment.yaml", TemplateProcess("c37ingress.deployment.yaml", "ingress")},
 	&ManifestEntry{Yep, "ingester.deployment.yaml", TemplateProcess("ingester.deployment.yaml", "ingress")},
 	&ManifestEntry{Yep, "receiver.deployment.yaml", TemplateProcess("receiver.deployment.yaml", "ingress")},
+	&ManifestEntry{Yep, "etcd-cluster.daemonset.yaml", TemplateProcess("etcd-cluster.daemonset.yaml", "core")},
 	&ManifestEntry{Yep, "pmu2btrdb.deployment.yaml", TemplateProcess("pmu2btrdb.deployment.yaml", "ingress")},
-	&ManifestEntry{Yep, "etcd.clusterrole.yaml", TemplateProcess("etcd.clusterrole.yaml", "global")},
 	&ManifestEntry{Yep, "mrplotter.deployment.yaml", TemplateProcess("mrplotter.deployment.yaml", "core")},
-	&ManifestEntry{Yep, "etcd.clusterrolebinding.yaml", TemplateProcess("etcd.clusterrolebinding.yaml", "core")},
-	&ManifestEntry{Yep, "etcd.serviceaccount.yaml", TemplateProcess("etcd.serviceaccount.yaml", "core")},
-	&ManifestEntry{Yep, "etcd.cluster.yaml", TemplateProcess("etcd.cluster.yaml", "core")},
-	&ManifestEntry{Yep, "etcd-operator.deployment.yaml", TemplateProcess("etcd-operator.deployment.yaml", "core")},
 	&ManifestEntry{Yep, "secret_ceph_keyring.sh", TemplateProcess("secret_ceph_keyring.sh", "core")},
 }
 

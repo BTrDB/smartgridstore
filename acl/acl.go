@@ -127,10 +127,14 @@ func (e *ACLEngine) GetGroup(name string) (*Group, error) {
 	}
 	if !found {
 		if name == "public" {
+			allcaps := []string{}
+			for k, _ := range KnownCapabilities {
+				allcaps = append(allcaps, k)
+			}
 			//The public group always exists
 			return &Group{
 				Name:         "public",
-				Capabilities: []string{"plotter"},
+				Capabilities: allcaps,
 				Prefixes:     []string{""},
 			}, nil
 		}
@@ -350,6 +354,15 @@ func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 	rv := &User{
 		Password: bu.Password,
 		Groups:   bu.Groups,
+	}
+	haspublic := false
+	for _, grp := range rv.Groups {
+		if grp == "public" {
+			haspublic = true
+		}
+	}
+	if !haspublic {
+		rv.Groups = append(rv.Groups, "public")
 	}
 	pfxs := make(map[string]bool)
 	caps := make(map[string]bool)

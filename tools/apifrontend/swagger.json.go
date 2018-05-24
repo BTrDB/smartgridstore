@@ -3,7 +3,7 @@ const SwaggerJSON = `{
   "swagger": "2.0",
   "info": {
     "title": "BTrDB v4 API",
-    "version": "4.10"
+    "version": "4.7.0"
   },
   "schemes": [
     "http",

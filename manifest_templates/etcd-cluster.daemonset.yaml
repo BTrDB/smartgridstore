@@ -1,0 +1,229 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    cluster: etcd
+  ports:
+  - protocol: TCP
+    port: 2379
+    targetPort: 2379
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: etcd-0
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    matchLabels:
+      name: etcd-0
+  template:
+    metadata:
+      labels:
+        name: etcd-0
+        cluster: etcd
+    spec:
+      nodeSelector:
+        "kubernetes.io/hostname": {{ index .SiteInfo.Etcd.Nodes 0 }}
+      containers:
+      - name: etcd
+        command:
+        - /usr/local/bin/etcd
+        - --name
+        - etcd-0
+        - --data-dir
+        - /data
+        - --initial-advertise-peer-urls
+        - http://etcd-0:2380
+        - --listen-peer-urls
+        - http://0.0.0.0:2380
+        - --listen-client-urls
+        - http://0.0.0.0:2379
+        - --advertise-client-urls
+        - http://etcd-0:2379
+        - --initial-cluster
+        - etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+        - --initial-cluster-state
+        - new
+        image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        ports:
+        - containerPort: 2379
+          name: client
+          protocol: TCP
+        - containerPort: 2380
+          name: server
+          protocol: TCP
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: data
+        hostPath:
+          path: /var/lib/etcd_{{.TargetNamespace}}-0
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-0
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    name: etcd-0
+  ports:
+  - protocol: TCP
+    port: 2379
+    targetPort: 2379
+    name: client
+  - protocol: TCP
+    port: 2380
+    targetPort: 2380
+    name: server
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: etcd-1
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    matchLabels:
+      name: etcd-1
+  template:
+    metadata:
+      labels:
+        name: etcd-1
+        cluster: etcd
+    spec:
+      nodeSelector:
+        "kubernetes.io/hostname": {{ index .SiteInfo.Etcd.Nodes 1 }}
+      containers:
+      - name: etcd
+        command:
+        - /usr/local/bin/etcd
+        - --name
+        - etcd-1
+        - --data-dir
+        - /data
+        - --initial-advertise-peer-urls
+        - http://etcd-1:2380
+        - --listen-peer-urls
+        - http://0.0.0.0:2380
+        - --listen-client-urls
+        - http://0.0.0.0:2379
+        - --advertise-client-urls
+        - http://etcd-1:2379
+        - --initial-cluster
+        - etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+        - --initial-cluster-state
+        - new
+        image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        ports:
+        - containerPort: 2379
+          name: client
+          protocol: TCP
+        - containerPort: 2380
+          name: server
+          protocol: TCP
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: data
+        hostPath:
+          path: /var/lib/etcd_{{.TargetNamespace}}-1
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-1
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    name: etcd-1
+  ports:
+  - protocol: TCP
+    port: 2379
+    targetPort: 2379
+    name: client
+  - protocol: TCP
+    port: 2380
+    targetPort: 2380
+    name: server
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: etcd-2
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    matchLabels:
+      name: etcd-2
+  template:
+    metadata:
+      labels:
+        name: etcd-2
+        cluster: etcd
+    spec:
+      nodeSelector:
+        "kubernetes.io/hostname": {{ index .SiteInfo.Etcd.Nodes 2 }}
+      containers:
+      - name: etcd
+        command:
+        - /usr/local/bin/etcd
+        - --name
+        - etcd-2
+        - --data-dir
+        - /data
+        - --initial-advertise-peer-urls
+        - http://etcd-2:2380
+        - --listen-peer-urls
+        - http://0.0.0.0:2380
+        - --listen-client-urls
+        - http://0.0.0.0:2379
+        - --advertise-client-urls
+        - http://etcd-2:2379
+        - --initial-cluster
+        - etcd-0=http://etcd-0:2380,etcd-1=http://etcd-1:2380,etcd-2=http://etcd-2:2380
+        - --initial-cluster-state
+        - new
+        image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        ports:
+        - containerPort: 2379
+          name: client
+          protocol: TCP
+        - containerPort: 2380
+          name: server
+          protocol: TCP
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: data
+        hostPath:
+          path: /var/lib/etcd_{{.TargetNamespace}}-2
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: etcd-2
+  namespace: {{.TargetNamespace}}
+spec:
+  selector:
+    name: etcd-2
+  ports:
+  - protocol: TCP
+    port: 2379
+    targetPort: 2379
+    name: client
+  - protocol: TCP
+    port: 2380
+    targetPort: 2380
+    name: server
+---
