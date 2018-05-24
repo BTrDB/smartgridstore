@@ -161,7 +161,7 @@ func (e *ACLEngine) DeleteGroup(name string) error {
 	if g == nil {
 		return fmt.Errorf("group not found\n")
 	}
-	_, err = e.c.Delete(context.Background(), fmt.Sprintf("auth/groups/%s", name))
+	_, err = e.c.Delete(context.Background(), fmt.Sprintf("%s/auth/groups/%s", e.prefix, name))
 	return err
 }
 
@@ -366,7 +366,7 @@ func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 	}
 	pfxs := make(map[string]bool)
 	caps := make(map[string]bool)
-	for _, gs := range bu.Groups {
+	for _, gs := range rv.Groups {
 		g, err := e.GetGroup(gs)
 		if err != nil {
 			return nil, err
