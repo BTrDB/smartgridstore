@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "5e4157bef49248520d00f4e6521208ebadb1b454"
+  revision = "99e6a535295ea385f48d00a4ace3856ccbd2587c"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "6d3d6f82c92d9656bb03d5281ab9a0c72b9f355e"
+  revision = "83c348dddc56ba7bbf230d5bcdc7e647240eb193"
 
 [[projects]]
   branch = "master"
@@ -117,6 +117,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
   name = "github.com/grpc-ecosystem/grpc-gateway"
   packages = [
     "runtime",
@@ -134,9 +140,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/howeyc/gopass"
+  packages = ["."]
+  revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
+
+[[projects]]
+  branch = "master"
   name = "github.com/huichen/murmur"
   packages = ["."]
   revision = "e0489551cf5116e27d7cc69d97a53cdbdd028acf"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/immesys/go-ceph"
+  packages = ["rados"]
+  revision = "59cdfdc5a408e6ed085d73ec8405cd8896a056da"
 
 [[projects]]
   branch = "master"
@@ -307,8 +325,11 @@
     "ed25519",
     "ed25519/internal/edwards25519",
     "internal/chacha20",
+    "pbkdf2",
     "poly1305",
-    "ssh"
+    "sha3",
+    "ssh",
+    "ssh/terminal"
   ]
   revision = "159ae71589f303f9fbfd7528413e0fe944b9c1cb"
 
@@ -324,12 +345,15 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "9ef9f5bb98a1fdc41f8cf6c250a4404b4085e389"
+  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "04b83988a018ef3ebffe1485df79d6499b76a4b4"
 
 [[projects]]
@@ -495,6 +519,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "28e6076558baa45dc49b0ed1cfa50a6d5cdfce621383ebc91508a54156037449"
+  inputs-digest = "eb23204773406c0defd6bb408da4607096e87f33655dd0a95c31b67e2bb1034b"
   solver-name = "gps-cdcl"
   solver-version = 1
