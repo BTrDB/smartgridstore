@@ -2,24 +2,30 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"mime"
 	"net"
 	"net/http"
+
 	"os"
 	"strings"
 	"time"
 
+	etcd "github.com/coreos/etcd/clientv3"
+
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
 	"github.com/BTrDB/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools/apifrontend/cli"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/op/go-logging"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
 
@@ -94,13 +100,83 @@ func (a *apiProvider) checkPermissionsByUUID(ctx context.Context, uu uuid.UUID, 
 func (a *apiProvider) checkPermissionsByCollection(ctx context.Context, collection string, op string) error {
 	return nil
 }
+
+func ProxyGRPCSecure(laddr string) *tls.Config {
+	etcdEndpoint := os.Getenv("ETCD_ENDPOINT")
+	if len(etcdEndpoint) == 0 {
+		etcdEndpoint = "http://etcd:2379"
+	}
+	etcdClient, err := etcd.New(etcd.Config{
+		Endpoints:   []string{etcdEndpoint},
+		DialTimeout: 5 * time.Second})
+	if err != nil {
+		fmt.Printf("Could not connect to etcd: %v\n", err)
+		os.Exit(1)
+	}
+
+	var cfg *tls.Config
+
+	mode, err := cli.GetAPIFrontendCertSrc(etcdClient)
+
+	if err != nil {
+		fmt.Printf("could not get certificate config: %v\n", err)
+		os.Exit(1)
+	}
+	switch mode {
+	case "autocert":
+		cfg, err = cli.GetAPIFrontendAutocertTLS(etcdClient)
+		if err != nil {
+			fmt.Printf("could not set up autocert: %v\n", err)
+			os.Exit(1)
+		}
+	case "hardcoded":
+		cert, key, err := cli.GetAPIFrontendHardcoded(etcdClient)
+		if err != nil {
+			fmt.Printf("could not load hardcoded certificate: %v\n", err)
+			os.Exit(1)
+		}
+		if len(cert) == 0 || len(key) == 0 {
+			fmt.Printf("CRITICAL: certsrc set to hardcoded but no certificate set\n")
+			os.Exit(1)
+		}
+		var tlsCertificate tls.Certificate
+		tlsCertificate, err = tls.X509KeyPair(cert, key)
+		cfg = &tls.Config{
+			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return &tlsCertificate, nil
+			},
+		}
+	default:
+		fmt.Printf("WARNING! secure API disabled in admin console\n")
+		return nil
+	}
+
+	creds := credentials.NewTLS(cfg)
+	l, err := net.Listen("tcp", laddr)
+	if err != nil {
+		panic(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	downstream, err := btrdb.Connect(ctx, btrdb.EndpointsFromEnv()...)
+	cancel()
+	if err != nil {
+		panic(err)
+	}
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	api := &apiProvider{s: grpcServer,
+		downstream: downstream,
+	}
+	pb.RegisterBTrDBServer(grpcServer, api)
+	go grpcServer.Serve(l)
+	return cfg
+}
+
 func ProxyGRPC(laddr string) GRPCInterface {
 	// go func() {
 	// 	fmt.Println("==== PROFILING ENABLED ==========")
 	// 	err := http.ListenAndServe("0.0.0.0:6061", nil)
 	// 	panic(err)
 	// }()
-
 	l, err := net.Listen("tcp", laddr)
 	if err != nil {
 		panic(err)
@@ -126,19 +202,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	ProxyGRPC("0.0.0.0:4410")
-
-	// etcdEndpoint := os.Getenv("ETCD_ENDPOINT")
-	// if len(etcdEndpoint) == 0 {
-	// 	etcdEndpoint = "http://etcd:2379"
-	// }
-	// etcdClient, err = etcd.New(etcd.Config{
-	// 	Endpoints:   []string{etcdEndpoint},
-	// 	DialTimeout: 5 * time.Second})
-	// if err != nil {
-	// 	fmt.Printf("Could not connect to etcd: %v\n", err)
-	// 	os.Exit(1)
-	// }
+	disable_insecure := strings.ToLower(os.Getenv("DISABLE_INSECURE")) == "yes"
+	insecure_listen := "0.0.0.0:4410"
+	if disable_insecure {
+		insecure_listen = "127.0.0.1:4410"
+	}
+	ProxyGRPC(insecure_listen)
+	tlsconfig := ProxyGRPCSecure("0.0.0.0:4411")
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -157,9 +227,27 @@ func main() {
 	}
 	mux.Handle("/", gwmux)
 	serveSwagger(mux)
-	err = http.ListenAndServe(":9000", mux)
-	panic(err)
 
+	if !disable_insecure {
+		go func() {
+			err := http.ListenAndServe(":9000", mux)
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
+	if tlsconfig != nil {
+		go func() {
+			server := &http.Server{Addr: ":9001", Handler: mux, TLSConfig: tlsconfig}
+			err := server.ListenAndServeTLS("", "")
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
+	for {
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func (a *apiProvider) InitiateShutdown() chan struct{} {
