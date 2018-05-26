@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
@@ -8,8 +10,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
+	"fmt"
 	"math/big"
+	"strings"
 	"time"
+
+	etcd "github.com/coreos/etcd/clientv3"
 )
 
 // This was taken from https://golang.org/src/crypto/tls/generate_cert.go.
@@ -87,4 +94,155 @@ func SelfSignedCertificate(dnsNames []string) (*pem.Block, *pem.Block, error) {
 		return nil, nil, err
 	}
 	return cert, key, nil
+}
+
+func MRPlottersAutocertTLSConfig(c *etcd.Client) (*tls.Config, error) {
+	hn, err := c.Get(context.Background(), "mrplotter/keys/hostname")
+	if err != nil {
+		return nil, err
+	}
+	if len(hn.Kvs) == 0 {
+		return nil, nil
+	}
+	hostname := string(hn.Kvs[0].Value)
+	ci, err := c.Get(context.Background(), "mrplotter/keys/autocert_cache/"+hostname)
+	if err != nil {
+		return nil, err
+	}
+	if len(ci.Kvs) == 0 {
+		return nil, nil
+	}
+	cert, err := certificateFromAutocertCache(hostname, ci.Kvs[0].Value)
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+			return cert, nil
+		},
+	}, nil
+}
+
+// cacheGet always returns a valid certificate, or an error otherwise.
+// If a cached certficate exists but is not valid, ErrCacheMiss is returned.
+func certificateFromAutocertCache(domain string, data []byte) (*tls.Certificate, error) {
+
+	// private
+	priv, pub := pem.Decode(data)
+	if priv == nil || !strings.Contains(priv.Type, "PRIVATE") {
+		return nil, fmt.Errorf("certificate is corrupt")
+	}
+	privKey, err := parsePrivateKey(priv.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// public
+	var pubDER [][]byte
+	for len(pub) > 0 {
+		var b *pem.Block
+		b, pub = pem.Decode(pub)
+		if b == nil {
+			break
+		}
+		pubDER = append(pubDER, b.Bytes)
+	}
+	if len(pub) > 0 {
+		// Leftover content not consumed by pem.Decode. Corrupt. Ignore.
+		return nil, fmt.Errorf("certificate is corrupt")
+	}
+
+	// verify and create TLS cert
+	leaf, err := validCert(domain, pubDER, privKey)
+	if err != nil {
+		return nil, fmt.Errorf("certificate is invalid")
+	}
+	tlscert := &tls.Certificate{
+		Certificate: pubDER,
+		PrivateKey:  privKey,
+		Leaf:        leaf,
+	}
+	return tlscert, nil
+}
+
+// validCert parses a cert chain provided as der argument and verifies the leaf, der[0],
+// corresponds to the private key, as well as the domain match and expiration dates.
+// It doesn't do any revocation checking.
+//
+// The returned value is the verified leaf cert.
+func validCert(domain string, der [][]byte, key crypto.Signer) (leaf *x509.Certificate, err error) {
+	// parse public part(s)
+	var n int
+	for _, b := range der {
+		n += len(b)
+	}
+	pub := make([]byte, n)
+	n = 0
+	for _, b := range der {
+		n += copy(pub[n:], b)
+	}
+	x509Cert, err := x509.ParseCertificates(pub)
+	if len(x509Cert) == 0 {
+		return nil, errors.New("acme/autocert: no public key found")
+	}
+	// verify the leaf is not expired and matches the domain name
+	leaf = x509Cert[0]
+	now := time.Now()
+	if now.Before(leaf.NotBefore) {
+		return nil, errors.New("acme/autocert: certificate is not valid yet")
+	}
+	if now.After(leaf.NotAfter) {
+		return nil, errors.New("acme/autocert: expired certificate")
+	}
+	if err := leaf.VerifyHostname(domain); err != nil {
+		return nil, err
+	}
+	// ensure the leaf corresponds to the private key
+	switch pub := leaf.PublicKey.(type) {
+	case *rsa.PublicKey:
+		prv, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("acme/autocert: private key type does not match public key type")
+		}
+		if pub.N.Cmp(prv.N) != 0 {
+			return nil, errors.New("acme/autocert: private key does not match public key")
+		}
+	case *ecdsa.PublicKey:
+		prv, ok := key.(*ecdsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("acme/autocert: private key type does not match public key type")
+		}
+		if pub.X.Cmp(prv.X) != 0 || pub.Y.Cmp(prv.Y) != 0 {
+			return nil, errors.New("acme/autocert: private key does not match public key")
+		}
+	default:
+		return nil, errors.New("acme/autocert: unknown public key algorithm")
+	}
+	return leaf, nil
+}
+
+// Attempt to parse the given private key DER block. OpenSSL 0.9.8 generates
+// PKCS#1 private keys by default, while OpenSSL 1.0.0 generates PKCS#8 keys.
+// OpenSSL ecparam generates SEC1 EC private keys for ECDSA. We try all three.
+//
+// Inspired by parsePrivateKey in crypto/tls/tls.go.
+func parsePrivateKey(der []byte) (crypto.Signer, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(der); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(der); err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey:
+			return key, nil
+		case *ecdsa.PrivateKey:
+			return key, nil
+		default:
+			return nil, errors.New("acme/autocert: unknown private key type in PKCS#8 wrapping")
+		}
+	}
+	if key, err := x509.ParseECPrivateKey(der); err == nil {
+		return key, nil
+	}
+
+	return nil, errors.New("acme/autocert: failed to parse private key")
 }

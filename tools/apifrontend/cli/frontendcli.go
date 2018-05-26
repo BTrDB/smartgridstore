@@ -81,12 +81,12 @@ func NewFrontendModule(c *etcd.Client) admincli.CLIModule {
 }
 
 func setkey(c *etcd.Client, keysuffix string, value string) error {
-	_, err := etcdConn.Put(context.Background(), "api/"+keysuffix, value)
+	_, err := c.Put(context.Background(), "api/"+keysuffix, value)
 	return err
 }
 
 func getkey(c *etcd.Client, keysuffix string) (string, error) {
-	resp, err := etcdConn.Get(context.Background(), "api/"+keysuffix)
+	resp, err := c.Get(context.Background(), "api/"+keysuffix)
 	if err != nil {
 		return "", err
 	}

@@ -124,11 +124,16 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 	}
 	switch mode {
 	case "autocert":
-		cfg, err = cli.GetAPIFrontendAutocertTLS(etcdClient)
+		cfg, err = MRPlottersAutocertTLSConfig(etcdClient)
 		if err != nil {
 			fmt.Printf("could not set up autocert: %v\n", err)
 			os.Exit(1)
 		}
+		if cfg == nil {
+			fmt.Printf("mrplotter autocert not set up fully\n")
+			os.Exit(1)
+		}
+		fmt.Printf("successfully loaded mrplotter's cert\n")
 	case "hardcoded":
 		cert, key, err := cli.GetAPIFrontendHardcoded(etcdClient)
 		if err != nil {
@@ -147,7 +152,7 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 			},
 		}
 	default:
-		fmt.Printf("WARNING! secure API disabled in admin console\n")
+		fmt.Printf("WARNING! secure API disabled in api frontend\n")
 		return nil
 	}
 
@@ -237,6 +242,7 @@ func main() {
 		}()
 	}
 	if tlsconfig != nil {
+		fmt.Printf("starting secure http\n")
 		go func() {
 			server := &http.Server{Addr: ":9001", Handler: mux, TLSConfig: tlsconfig}
 			err := server.ListenAndServeTLS("", "")
@@ -244,6 +250,8 @@ func main() {
 				panic(err)
 			}
 		}()
+	} else {
+		fmt.Printf("skipping secure http\n")
 	}
 	for {
 		time.Sleep(10 * time.Second)

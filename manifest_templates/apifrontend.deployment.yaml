@@ -19,7 +19,7 @@ spec:
           - name: ETCD_ENDPOINT
             value: http://etcd:2379
           - name: DISABLE_INSECURE
-            value: NO
+            value: "NO"
           - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410{{if gt (len .SiteInfo.ExternalIPs) 0 }}
           - name: EXTERNAL_ADDRESS
@@ -27,10 +27,10 @@ spec:
         ports:
           - containerPort: 4410
             protocol: TCP
-            name: grpc_insecure
+            name: grpc-insecure
           - containerPort: 4411
             protocol: TCP
-            name: grpc_secure
+            name: grpc-secure
           - containerPort: 9000
             protocol: TCP
             name: http
@@ -48,11 +48,11 @@ metadata:
 spec:
   ports:
   - port: 4410
-    targetPort: grpc_insecure
-    name: grpc_insecure
+    targetPort: grpc-insecure
+    name: grpc-insecure
   - port: 4411
-    targetPort: grpc_secure
-    name: grpc_secure
+    targetPort: grpc-secure
+    name: grpc-secure
   - port: 9000
     targetPort: http
     name: http
