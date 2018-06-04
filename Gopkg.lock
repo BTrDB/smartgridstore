@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "72fa28d9df15f16c8e359d49bda5042c2d22f758"
+  revision = "b056a821443483bcb7c2b3d31ff505ff8a24fc37"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "a41d149e3eba7f73247cb535789087cc2b17d189"
+  revision = "aaa430d6465e35c9e9b26cd0da998be05b7f0bbc"
 
 [[projects]]
   branch = "master"
