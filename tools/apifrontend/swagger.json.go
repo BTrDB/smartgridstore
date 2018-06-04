@@ -1,4 +1,5 @@
 package main
+
 const SwaggerJSON = `{
   "swagger": "2.0",
   "info": {
@@ -168,6 +169,58 @@ const SwaggerJSON = `{
             "required": true,
             "schema": {
               "$ref": "#/definitions/grpcinterfaceFlushParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v4/generatecsv": {
+      "post": {
+        "operationId": "GenerateCSV",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceGenerateCSVResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceGenerateCSVParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDB"
+        ]
+      }
+    },
+    "/v4/getmetadatausage": {
+      "post": {
+        "operationId": "GetMetadataUsage",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceMetadataUsageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/grpcinterfaceMetadataUsageParams"
             }
           }
         ],
@@ -438,6 +491,15 @@ const SwaggerJSON = `{
     }
   },
   "definitions": {
+    "GenerateCSVParamsQueryType": {
+      "type": "string",
+      "enum": [
+        "ALIGNED_WINDOWS_QUERY",
+        "WINDOWS_QUERY",
+        "RAW_QUERY"
+      ],
+      "default": "ALIGNED_WINDOWS_QUERY"
+    },
     "grpcinterfaceAlignedWindowsParams": {
       "type": "object",
       "properties": {
@@ -645,6 +707,62 @@ const SwaggerJSON = `{
       "properties": {
         "stat": {
           "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "majorVersion": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "minorVersion": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "grpcinterfaceGenerateCSVParams": {
+      "type": "object",
+      "properties": {
+        "queryType": {
+          "$ref": "#/definitions/GenerateCSVParamsQueryType"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "int64"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "int64"
+        },
+        "depth": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "includeVersions": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceStreamCSVConfig"
+          }
+        }
+      }
+    },
+    "grpcinterfaceGenerateCSVResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "isHeader": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "row": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -706,6 +824,18 @@ const SwaggerJSON = `{
           "format": "uint64"
         },
         "versionMinor": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "grpcinterfaceKeyCount": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "count": {
           "type": "string",
           "format": "uint64"
         }
@@ -878,6 +1008,34 @@ const SwaggerJSON = `{
         },
         "grpcEndpoints": {
           "type": "string"
+        }
+      }
+    },
+    "grpcinterfaceMetadataUsageParams": {
+      "type": "object",
+      "properties": {
+        "prefix": {
+          "type": "string"
+        }
+      }
+    },
+    "grpcinterfaceMetadataUsageResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/grpcinterfaceStatus"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceKeyCount"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/grpcinterfaceKeyCount"
+          }
         }
       }
     },
@@ -1081,6 +1239,22 @@ const SwaggerJSON = `{
         }
       }
     },
+    "grpcinterfaceStreamCSVConfig": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "label": {
+          "type": "string"
+        },
+        "uuid": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "grpcinterfaceStreamDescriptor": {
       "type": "object",
       "properties": {
@@ -1198,4 +1372,4 @@ const SwaggerJSON = `{
     }
   }
 }
-`;
+`

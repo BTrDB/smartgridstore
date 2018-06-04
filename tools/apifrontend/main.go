@@ -615,3 +615,34 @@ func (a *apiProvider) Info(ctx context.Context, params *pb.InfoParams) (*pb.Info
 		Proxy:        ProxyInfo,
 	}, nil
 }
+
+func (a *apiProvider) GenerateCSV(p *pb.GenerateCSVParams, r pb.BTrDB_GenerateCSVServer) error {
+	ctx := r.Context()
+	for _, stream := range p.Streams {
+		err := a.checkPermissionsByUUID(ctx, stream.GetUuid(), "GenerateCSV")
+		if err != nil {
+			return err
+		}
+	}
+	ds, err := a.readEndpoint(ctx, uuid.NewRandom())
+	if err != nil {
+		return err
+	}
+	client, err := ds.GetGRPC().GenerateCSV(ctx, p)
+	if err != nil {
+		return err
+	}
+	for {
+		resp, err := client.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		err = r.Send(resp)
+		if err != nil {
+			return err
+		}
+	}
+}
