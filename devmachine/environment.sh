@@ -10,7 +10,7 @@ export OSDBASE=$DEVMACHINE_BASE/ceph
 export ETCDBASE=$DEVMACHINE_BASE/etcd
 
 # which version of BTrDB and tools to install
-export VERSION=4.10.1
+export VERSION=4.11.0
 
 # pick which branch to use
 export PREFIX=""
