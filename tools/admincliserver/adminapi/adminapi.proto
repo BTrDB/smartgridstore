@@ -1,0 +1,76 @@
+syntax = "proto3";
+package adminapi;
+
+import "google/api/annotations.proto";
+
+service BTrDBAdmin {
+  //Requires Manifest capability
+  rpc ManifestAdd(ManifestAddParams) returns (ManifestAddResponse) {
+  option (google.api.http) = {
+     post: "/v4/manifestadd"
+       body: "*"
+     };
+  }
+  rpc ManifestDel(ManifestDelParams) returns (ManifestDelResponse) {
+  option (google.api.http) = {
+     post: "/v4/manifestdel"
+       body: "*"
+     };
+  }
+  rpc ManifestDelPrefix(ManifestDelPrefixParams) returns (ManifestDelPrefixResponse) {
+  option (google.api.http) = {
+     post: "/v4/manifestdelprefix"
+       body: "*"
+     };
+  }
+  rpc ManifestLsDevs(ManifestLsDevsParams) returns (ManifestLsDevsResponse) {
+  option (google.api.http) = {
+     post: "/v4/manifestlsdevs"
+       body: "*"
+     };
+  }
+}
+
+message ManifestAddParams {
+  string deviceid = 1;
+  repeated MetaKeyValue metadata = 2;
+}
+message ManifestAddResponse {
+  Status stat = 1;
+}
+message MetaKeyValue {
+  string key = 1;
+  string value = 2;
+}
+
+message ManifestDelParams {
+  string deviceid = 1;
+}
+message ManifestDelResponse {
+  Status stat = 1;
+}
+
+message ManifestDelPrefixParams {
+  string deviceidprefix = 1;
+}
+message ManifestDelPrefixResponse {
+  Status stat = 1;
+  uint32 numdeleted = 2;
+}
+
+message ManifestLsDevsParams {
+  string deviceidprefix = 1;
+}
+message ManifestLsDevsResponse {
+  Status stat = 1;
+  repeated ManifestDevice devices = 2;
+}
+message ManifestDevice {
+  string deviceid = 1;
+  repeated MetaKeyValue metadata = 2;
+}
+
+message Status {
+  uint32 code = 1;
+  string msg = 2;
+}

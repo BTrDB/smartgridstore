@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "99e6a535295ea385f48d00a4ace3856ccbd2587c"
+  revision = "72fa28d9df15f16c8e359d49bda5042c2d22f758"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "83c348dddc56ba7bbf230d5bcdc7e647240eb193"
+  revision = "a41d149e3eba7f73247cb535789087cc2b17d189"
 
 [[projects]]
   branch = "master"
@@ -65,7 +65,7 @@
     "raft",
     "raft/raftpb"
   ]
-  revision = "20cf7f4d5b7af698dd216b228a53d3e192e32d1f"
+  revision = "438e6750ee4dd3861c83514e405adf2f3e437e4c"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -121,6 +121,16 @@
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
+  name = "github.com/grpc-ecosystem/go-grpc-middleware"
+  packages = [
+    ".",
+    "auth",
+    "util/metautils"
+  ]
+  revision = "c250d6563d4d4c20252cd865923440e829844f4e"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/grpc-ecosystem/grpc-gateway"
@@ -189,8 +199,8 @@
 [[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
-  revision = "3247c84500bff8d9fb6d579d800f20b3e091582c"
-  version = "v1.0.0"
+  revision = "c12348ce28de40eed0136aa2b644d0ee0650e56c"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/montanaflynn/stats"
@@ -256,7 +266,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "8b1c2da0d56deffdbb9e48d4414b4e674bd8083e"
+  revision = "94663424ae5ae9856b40a9f170762b4197024661"
 
 [[projects]]
   branch = "master"
@@ -331,7 +341,7 @@
     "ssh",
     "ssh/terminal"
   ]
-  revision = "159ae71589f303f9fbfd7528413e0fe944b9c1cb"
+  revision = "df8d4716b3472e4a531c33cedbe537dae921a1a9"
 
 [[projects]]
   branch = "master"
@@ -345,7 +355,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
@@ -354,7 +364,7 @@
     "unix",
     "windows"
   ]
-  revision = "04b83988a018ef3ebffe1485df79d6499b76a4b4"
+  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -384,7 +394,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "694d95ba50e67b2e363f3483057db5d4910c18f9"
+  revision = "81158efcc9f219c511e4d3c0d61a0e6e49c01a24"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -474,8 +484,8 @@
 [[projects]]
   name = "gopkg.in/ini.v1"
   packages = ["."]
-  revision = "6529cf7c58879c08d927016dde4477f18a0634cb"
-  version = "v1.36.0"
+  revision = "06f5f3d67269ccec1fe5fe4134ba6e982984f7f5"
+  version = "v1.37.0"
 
 [[projects]]
   name = "gopkg.in/mattn/go-colorable.v0"
@@ -519,6 +529,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0b239aee6fc8ac62f79caca42d416fef1046357caf3163afcd6be1b233b3de6b"
+  inputs-digest = "3b3c654c965bac66f0b2a2ffa5055f7be3b11b219b1477e56c0c507fce926750"
   solver-name = "gps-cdcl"
   solver-version = 1

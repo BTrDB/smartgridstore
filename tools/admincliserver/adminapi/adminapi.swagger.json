@@ -1,0 +1,243 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "adminapi.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v4/manifestadd": {
+      "post": {
+        "summary": "Requires Manifest capability",
+        "operationId": "ManifestAdd",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestAddResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestAddParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
+    },
+    "/v4/manifestdel": {
+      "post": {
+        "operationId": "ManifestDel",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestDelResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestDelParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
+    },
+    "/v4/manifestdelprefix": {
+      "post": {
+        "operationId": "ManifestDelPrefix",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestDelPrefixResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestDelPrefixParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
+    },
+    "/v4/manifestlsdevs": {
+      "post": {
+        "operationId": "ManifestLsDevs",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestLsDevsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiManifestLsDevsParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "adminapiManifestAddParams": {
+      "type": "object",
+      "properties": {
+        "deviceid": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/adminapiMetaKeyValue"
+          }
+        }
+      }
+    },
+    "adminapiManifestAddResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/adminapiStatus"
+        }
+      }
+    },
+    "adminapiManifestDelParams": {
+      "type": "object",
+      "properties": {
+        "deviceid": {
+          "type": "string"
+        }
+      }
+    },
+    "adminapiManifestDelPrefixParams": {
+      "type": "object",
+      "properties": {
+        "deviceidprefix": {
+          "type": "string"
+        }
+      }
+    },
+    "adminapiManifestDelPrefixResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/adminapiStatus"
+        },
+        "numdeleted": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "adminapiManifestDelResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/adminapiStatus"
+        }
+      }
+    },
+    "adminapiManifestDevice": {
+      "type": "object",
+      "properties": {
+        "deviceid": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/adminapiMetaKeyValue"
+          }
+        }
+      }
+    },
+    "adminapiManifestLsDevsParams": {
+      "type": "object",
+      "properties": {
+        "deviceidprefix": {
+          "type": "string"
+        }
+      }
+    },
+    "adminapiManifestLsDevsResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/adminapiStatus"
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/adminapiManifestDevice"
+          }
+        }
+      }
+    },
+    "adminapiMetaKeyValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "adminapiStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "msg": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

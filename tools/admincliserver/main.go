@@ -12,6 +12,7 @@ import (
 
 	"github.com/BTrDB/smartgridstore/acl"
 	"github.com/BTrDB/smartgridstore/tools"
+	"github.com/BTrDB/smartgridstore/tools/admincliserver/adminapi"
 	etcd "github.com/coreos/etcd/clientv3"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh"
@@ -106,6 +107,8 @@ func main() {
 	}
 
 	config.AddHostKey(private)
+	adminapi.ServeGRPC(etcdClient, "0.0.0.0:2223")
+	adminapi.ServeHTTP(etcdClient, "0.0.0.0:2224", "cm7.cal-sdb.org:2223")
 
 	listener, err := net.Listen("tcp", "0.0.0.0:2222")
 	if err != nil {

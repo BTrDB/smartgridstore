@@ -19,7 +19,7 @@ import (
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
 	"github.com/BTrDB/smartgridstore/tools"
-	"github.com/BTrDB/smartgridstore/tools/apifrontend/cli"
+	"github.com/BTrDB/smartgridstore/tools/certutils"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/op/go-logging"
@@ -114,45 +114,13 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 		os.Exit(1)
 	}
 
-	var cfg *tls.Config
-
-	mode, err := cli.GetAPIFrontendCertSrc(etcdClient)
-
+	cfg, err := certutils.GetAPIConfig(etcdClient)
 	if err != nil {
-		fmt.Printf("could not get certificate config: %v\n", err)
+		fmt.Printf("Could not initialize TLS: %v\n", err)
 		os.Exit(1)
 	}
-	switch mode {
-	case "autocert":
-		cfg, err = MRPlottersAutocertTLSConfig(etcdClient)
-		if err != nil {
-			fmt.Printf("could not set up autocert: %v\n", err)
-			os.Exit(1)
-		}
-		if cfg == nil {
-			fmt.Printf("mrplotter autocert not set up fully\n")
-			os.Exit(1)
-		}
-		fmt.Printf("successfully loaded mrplotter's cert\n")
-	case "hardcoded":
-		cert, key, err := cli.GetAPIFrontendHardcoded(etcdClient)
-		if err != nil {
-			fmt.Printf("could not load hardcoded certificate: %v\n", err)
-			os.Exit(1)
-		}
-		if len(cert) == 0 || len(key) == 0 {
-			fmt.Printf("CRITICAL: certsrc set to hardcoded but no certificate set\n")
-			os.Exit(1)
-		}
-		var tlsCertificate tls.Certificate
-		tlsCertificate, err = tls.X509KeyPair(cert, key)
-		cfg = &tls.Config{
-			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				return &tlsCertificate, nil
-			},
-		}
-	default:
-		fmt.Printf("WARNING! secure API disabled in api frontend\n")
+	if cfg == nil {
+		fmt.Printf("TLS config is incomplete, disabling secure endpoints\n")
 		return nil
 	}
 
