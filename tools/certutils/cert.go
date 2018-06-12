@@ -1,4 +1,6 @@
-package main
+//This package allows tools to use the external TLS certificate
+
+package certutils
 
 import (
 	"context"
@@ -16,8 +18,47 @@ import (
 	"strings"
 	"time"
 
+	acli "github.com/BTrDB/smartgridstore/tools/apifrontend/cli"
+
 	etcd "github.com/coreos/etcd/clientv3"
 )
+
+func GetAPIConfig(ec *etcd.Client) (*tls.Config, error) {
+	src, err := acli.GetAPIFrontendCertSrc(ec)
+	if err != nil {
+		return nil, err
+	}
+	switch src {
+	case "hardcoded":
+		cert, key, err := acli.GetAPIFrontendHardcoded(ec)
+		if err != nil {
+			return nil, fmt.Errorf("could not load hardcoded certificate: %v\n", err)
+		}
+		if len(cert) == 0 || len(key) == 0 {
+			return nil, fmt.Errorf("CRITICAL: certsrc set to hardcoded but no certificate set\n")
+		}
+		var tlsCertificate tls.Certificate
+		tlsCertificate, err = tls.X509KeyPair(cert, key)
+		cfg := &tls.Config{
+			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return &tlsCertificate, nil
+			},
+		}
+		return cfg, nil
+	case "autocert":
+		cfg, err := MRPlottersAutocertTLSConfig(ec)
+		if err != nil {
+			return nil, err
+		}
+		if cfg == nil {
+			return nil, nil
+		}
+		return cfg, nil
+	case "disabled":
+		return nil, nil
+	}
+	return nil, nil
+}
 
 // This was taken from https://golang.org/src/crypto/tls/generate_cert.go.
 // All credit to the Go Authors.

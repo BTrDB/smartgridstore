@@ -245,6 +245,8 @@ OPUT=$(docker run -d \
   --name ${CONTAINER_PREFIX}console \
   --net ${DOCKERNET} \
   -p ${CONSOLE_PORT}:2222 \
+  -p 2223:2223 \
+  -p 2224:2224 \
   --ip ${SUB24}.26 \
   --restart always \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \

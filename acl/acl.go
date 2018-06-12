@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,13 +15,17 @@ import (
 	etcd "github.com/coreos/etcd/clientv3"
 )
 
+const DefaultPrefix = "btrdb"
+
 type ACLEngine struct {
-	c      *etcd.Client
-	prefix string
+	c             *etcd.Client
+	prefix        string
+	cachedUsers   map[CachedUserKey]CachedUser
+	cachedUsersMu sync.Mutex
 }
 
 func NewACLEngine(prefix string, c *etcd.Client) *ACLEngine {
-	return &ACLEngine{c: c, prefix: prefix}
+	return &ACLEngine{c: c, prefix: prefix, cachedUsers: make(map[CachedUserKey]CachedUser)}
 }
 
 type IdentityProvider string
@@ -38,6 +43,7 @@ var KnownCapabilities = map[string]bool{
 	"read":       true,
 	"delete":     true,
 	"obliterate": true,
+	"admin":      true,
 }
 
 func (e *ACLEngine) set(key string, val string) error {
@@ -308,6 +314,15 @@ type User struct {
 	Capabilities []string
 }
 
+func (u *User) HasCapability(c string) bool {
+	for _, cap := range u.Capabilities {
+		if cap == c {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *ACLEngine) WatchForAuthChanges(ctx context.Context) (chan struct{}, error) {
 	rv := make(chan struct{}, 10)
 	go func() {
@@ -320,8 +335,29 @@ func (e *ACLEngine) WatchForAuthChanges(ctx context.Context) (chan struct{}, err
 	return rv, nil
 }
 
+type CachedUser struct {
+	User   *User
+	Expiry time.Time
+}
+type CachedUserKey struct {
+	Name     string
+	Password string
+}
+
+const UserCacheTime = 3 * time.Minute
+
 //Returns false, nil, nil if password is incorrect or user does not exist
 func (e *ACLEngine) AuthenticateUser(name string, password string) (bool, *User, error) {
+	ck := CachedUserKey{
+		Name:     name,
+		Password: password,
+	}
+	e.cachedUsersMu.Lock()
+	cached, ok := e.cachedUsers[ck]
+	e.cachedUsersMu.Unlock()
+	if ok && cached.Expiry.Before(time.Now()) {
+		return ok, cached.User, nil
+	}
 	idp, err := e.GetIDP()
 	if err != nil {
 		return false, nil, err
@@ -338,6 +374,12 @@ func (e *ACLEngine) AuthenticateUser(name string, password string) (bool, *User,
 		if err != nil {
 			return false, nil, nil
 		}
+		e.cachedUsersMu.Lock()
+		e.cachedUsers[ck] = CachedUser{
+			User:   u,
+			Expiry: time.Now().Add(UserCacheTime),
+		}
+		e.cachedUsersMu.Unlock()
 		return true, u, nil
 	}
 	return false, nil, fmt.Errorf("unsupported identity provider")

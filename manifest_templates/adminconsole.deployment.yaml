@@ -31,6 +31,12 @@ spec:
           - containerPort: 2222
             protocol: TCP
             name: adminport
+          - containerPort: 2223
+            name: admin-grpc-api
+            protocol: TCP
+          - containerPort: 2224
+            name: admin-http-api
+            protocol: TCP
       volumes:
         - name: ceph-keyring
           secret:
@@ -51,6 +57,12 @@ spec:
   - port: 2222
     targetPort: adminport
     name: console
+  - port: 2223
+    targetPort: admin-grpc-api
+    name: admin-grpc-api
+  - port: 2224
+    targetPort: admin-http-api
+    name: admin-http-api
   externalIPs:{{range .SiteInfo.ExternalIPs}}
   - {{.}}{{end}}
   selector:
