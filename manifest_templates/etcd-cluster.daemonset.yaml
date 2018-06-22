@@ -49,6 +49,11 @@ spec:
         - --initial-cluster-state
         - new
         image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        env:
+        - name: ETCD_AUTO_COMPACTION_RETENTION
+          value: "1"
+        - name: ETCD_QUOTA_BACKEND_BYTES
+          value: "8589934592"
         volumeMounts:
         - name: data
           mountPath: /data
@@ -121,6 +126,11 @@ spec:
         - --initial-cluster-state
         - new
         image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        env:
+        - name: ETCD_AUTO_COMPACTION_RETENTION
+          value: "1"
+        - name: ETCD_QUOTA_BACKEND_BYTES
+          value: "8589934592"
         volumeMounts:
         - name: data
           mountPath: /data
@@ -193,6 +203,11 @@ spec:
         - --initial-cluster-state
         - new
         image: quay.io/coreos/etcd:{{.SiteInfo.Etcd.Version}}
+        env:
+        - name: ETCD_AUTO_COMPACTION_RETENTION
+          value: "1"
+        - name: ETCD_QUOTA_BACKEND_BYTES
+          value: "8589934592"
         volumeMounts:
         - name: data
           mountPath: /data

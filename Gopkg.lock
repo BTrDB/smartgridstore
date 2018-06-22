@@ -5,7 +5,7 @@
   branch = "v4"
   name = "github.com/BTrDB/btrdb"
   packages = ["."]
-  revision = "737f1fe4e06ad8ebc539d5f2797a489eb15b62c8"
+  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
 
 [[projects]]
   branch = "master"
@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "b056a821443483bcb7c2b3d31ff505ff8a24fc37"
+  revision = "6f8450b2e77da00b5b94b7e095445be2f8fb3051"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "aaa430d6465e35c9e9b26cd0da998be05b7f0bbc"
+  revision = "aa8bb1fb8640696398a188104a6b5a135e1948d2"
 
 [[projects]]
   branch = "master"
@@ -56,6 +56,8 @@
     "auth/authpb",
     "clientv3",
     "clientv3/balancer",
+    "clientv3/balancer/picker",
+    "clientv3/balancer/resolver/endpoint",
     "etcdserver/api/v3rpc/rpctypes",
     "etcdserver/etcdserverpb",
     "mvcc/mvccpb",
@@ -65,7 +67,7 @@
     "raft",
     "raft/raftpb"
   ]
-  revision = "438e6750ee4dd3861c83514e405adf2f3e437e4c"
+  revision = "acf75ddc5b0940ce2f83ae7843efa9b87c7ec2cd"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -127,6 +129,7 @@
   packages = [
     ".",
     "auth",
+    "util/backoffutils",
     "util/metautils"
   ]
   revision = "c250d6563d4d4c20252cd865923440e829844f4e"
@@ -266,7 +269,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "94663424ae5ae9856b40a9f170762b4197024661"
+  revision = "7d6f385de8bea29190f15ba9931442a0eaef9af7"
 
 [[projects]]
   branch = "master"
@@ -335,13 +338,14 @@
     "ed25519",
     "ed25519/internal/edwards25519",
     "internal/chacha20",
+    "internal/subtle",
     "pbkdf2",
     "poly1305",
     "sha3",
     "ssh",
     "ssh/terminal"
   ]
-  revision = "df8d4716b3472e4a531c33cedbe537dae921a1a9"
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
@@ -355,7 +359,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "1e491301e022f8f977054da4c2d852decd59571f"
+  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
 
 [[projects]]
   branch = "master"
@@ -364,7 +368,7 @@
     "unix",
     "windows"
   ]
-  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
+  revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -394,7 +398,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "81158efcc9f219c511e4d3c0d61a0e6e49c01a24"
+  revision = "80063a038e333bbe006c878e4c5ce4c74d055498"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -403,16 +407,17 @@
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
-    "channelz",
     "codes",
     "connectivity",
     "credentials",
     "encoding",
     "encoding/proto",
-    "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "health/grpc_health_v1",
     "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/grpcrand",
     "keepalive",
     "metadata",
     "naming",
@@ -425,8 +430,8 @@
     "tap",
     "transport"
   ]
-  revision = "41344da2231b913fa3d983840a57a6b1b7b631a1"
-  version = "v1.12.0"
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
+  version = "v1.13.0"
 
 [[projects]]
   branch = "v4"
@@ -435,7 +440,7 @@
     ".",
     "grpcinterface"
   ]
-  revision = "737f1fe4e06ad8ebc539d5f2797a489eb15b62c8"
+  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
 
 [[projects]]
   name = "gopkg.in/VividCortex/ewma.v1"
@@ -447,7 +452,7 @@
   branch = "v4"
   name = "gopkg.in/btrdb.v4"
   packages = ["."]
-  revision = "737f1fe4e06ad8ebc539d5f2797a489eb15b62c8"
+  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
 
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v1"
