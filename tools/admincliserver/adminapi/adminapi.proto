@@ -29,6 +29,30 @@ service BTrDBAdmin {
        body: "*"
      };
   }
+  rpc ResetAPIKey(ResetAPIKeyParams) returns (APIKeyResponse) {
+  option (google.api.http) = {
+     post: "/v4/resetapikey"
+       body: "*"
+     };
+  }
+
+  rpc GetAPIKey(GetAPIKeyParams) returns (APIKeyResponse) {
+  option (google.api.http) = {
+     post: "/v4/getapikey"
+       body: "*"
+     };
+  }
+}
+
+message ResetAPIKeyParams {
+
+}
+message GetAPIKeyParams {
+
+}
+message APIKeyResponse {
+  Status stat = 1;
+  string apikey = 2;
 }
 
 message ManifestAddParams {

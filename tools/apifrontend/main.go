@@ -18,13 +18,16 @@ import (
 
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 
+	"github.com/BTrDB/smartgridstore/acl"
 	"github.com/BTrDB/smartgridstore/tools"
 	"github.com/BTrDB/smartgridstore/tools/certutils"
 	assetfs "github.com/elazarl/go-bindata-assetfs"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	logging "github.com/op/go-logging"
 	"github.com/pborman/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	pb "gopkg.in/BTrDB/btrdb.v4/grpcinterface"
 )
@@ -32,15 +35,46 @@ import (
 const MajorVersion = tools.VersionMajor
 const MinorVersion = tools.VersionMinor
 
+type CK string
+
+const UserKey CK = "user"
+
 type apiProvider struct {
 	s          *grpc.Server
 	downstream *btrdb.BTrDB
+	ae         *acl.ACLEngine
 }
 
 var logger *logging.Logger
 
 func init() {
 	logger = logging.MustGetLogger("log")
+}
+
+func (a *apiProvider) authfunc(ctx context.Context) (context.Context, error) {
+	var userObj *acl.User
+	auth, err := grpc_auth.AuthFromMD(ctx, "bearer")
+	if err != nil {
+		if grpc.Code(err) == codes.Unauthenticated {
+			userObj, err = a.ae.GetPublicUser()
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	if auth != "" {
+		//Returns false, nil, nil if password is incorrect or user does not exist
+		var ok bool
+		ok, userObj, err = a.ae.AuthenticateUserByKey(auth)
+		if !ok {
+			return nil, grpc.Errorf(codes.Unauthenticated, "invalid api key")
+		}
+	}
+	newCtx := context.WithValue(ctx, UserKey, userObj)
+	return newCtx, nil
 }
 
 //go:generate ./genswag.py
@@ -94,10 +128,27 @@ func (a *apiProvider) anyEndpoint(ctx context.Context) (*btrdb.Endpoint, error) 
 // func (a *apiProvider) getUser(ctx context.Context) (*User, error) {
 // 	return nil, nil
 // }
-func (a *apiProvider) checkPermissionsByUUID(ctx context.Context, uu uuid.UUID, op string) error {
-	return nil
+func (a *apiProvider) checkPermissionsByUUID(ctx context.Context, uu uuid.UUID, cap ...string) error {
+	s := a.downstream.StreamFromUUID(uu)
+	col, err := s.Collection(ctx)
+	if err != nil {
+		if e := btrdb.ToCodedError(err); e != nil && e.Code == 404 {
+			return grpc.Errorf(codes.PermissionDenied, "user does not have permission on this stream")
+		}
+		return err
+	}
+	return a.checkPermissionsByCollection(ctx, col, cap...)
 }
-func (a *apiProvider) checkPermissionsByCollection(ctx context.Context, collection string, op string) error {
+func (a *apiProvider) checkPermissionsByCollection(ctx context.Context, collection string, cap ...string) error {
+	u, ok := ctx.Value(UserKey).(*acl.User)
+	if !ok {
+		return grpc.Errorf(codes.PermissionDenied, "could not resolve user")
+	}
+	for _, cp := range cap {
+		if !u.HasCapabilityOnPrefix(cp, collection) {
+			return grpc.Errorf(codes.PermissionDenied, "user does not have permission %q on %q", cp, collection)
+		}
+	}
 	return nil
 }
 
@@ -135,21 +186,33 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 	if err != nil {
 		panic(err)
 	}
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	api := &apiProvider{s: grpcServer,
-		downstream: downstream,
-	}
+	api := &apiProvider{downstream: downstream}
+	ae := acl.NewACLEngine(acl.DefaultPrefix, etcdClient)
+	api.ae = ae
+	//--
+	grpcServer := grpc.NewServer(grpc.Creds(creds),
+		grpc.StreamInterceptor(grpc_auth.StreamServerInterceptor(api.authfunc)),
+		grpc.UnaryInterceptor(grpc_auth.UnaryServerInterceptor(api.authfunc)))
+	//--
+	api.s = grpcServer
+
 	pb.RegisterBTrDBServer(grpcServer, api)
 	go grpcServer.Serve(l)
 	return cfg
 }
 
 func ProxyGRPC(laddr string) GRPCInterface {
-	// go func() {
-	// 	fmt.Println("==== PROFILING ENABLED ==========")
-	// 	err := http.ListenAndServe("0.0.0.0:6061", nil)
-	// 	panic(err)
-	// }()
+	etcdEndpoint := os.Getenv("ETCD_ENDPOINT")
+	if len(etcdEndpoint) == 0 {
+		etcdEndpoint = "http://etcd:2379"
+	}
+	etcdClient, err := etcd.New(etcd.Config{
+		Endpoints:   []string{etcdEndpoint},
+		DialTimeout: 5 * time.Second})
+	if err != nil {
+		fmt.Printf("Could not connect to etcd: %v\n", err)
+		os.Exit(1)
+	}
 	l, err := net.Listen("tcp", laddr)
 	if err != nil {
 		panic(err)
@@ -160,10 +223,15 @@ func ProxyGRPC(laddr string) GRPCInterface {
 	if err != nil {
 		panic(err)
 	}
-	grpcServer := grpc.NewServer()
-	api := &apiProvider{s: grpcServer,
-		downstream: downstream,
-	}
+	api := &apiProvider{downstream: downstream}
+	ae := acl.NewACLEngine(acl.DefaultPrefix, etcdClient)
+	api.ae = ae
+	//--
+	grpcServer := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_auth.StreamServerInterceptor(api.authfunc)),
+		grpc.UnaryInterceptor(grpc_auth.UnaryServerInterceptor(api.authfunc)))
+	//--
+	api.s = grpcServer
 	pb.RegisterBTrDBServer(grpcServer, api)
 	go grpcServer.Serve(l)
 	return api
@@ -238,7 +306,7 @@ func (a *apiProvider) InitiateShutdown() chan struct{} {
 func (a *apiProvider) RawValues(p *pb.RawValuesParams, r pb.BTrDB_RawValuesServer) error {
 	ctx := r.Context()
 	uu := p.Uuid
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "RawValues")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return err
 	}
@@ -271,7 +339,7 @@ func (a *apiProvider) RawValues(p *pb.RawValuesParams, r pb.BTrDB_RawValuesServe
 func (a *apiProvider) AlignedWindows(p *pb.AlignedWindowsParams, r pb.BTrDB_AlignedWindowsServer) error {
 	ctx := r.Context()
 	uu := p.Uuid
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "AlignedWindows")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return err
 	}
@@ -303,7 +371,7 @@ func (a *apiProvider) AlignedWindows(p *pb.AlignedWindowsParams, r pb.BTrDB_Alig
 }
 func (a *apiProvider) Windows(p *pb.WindowsParams, r pb.BTrDB_WindowsServer) error {
 	ctx := r.Context()
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Windows")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return err
 	}
@@ -334,7 +402,7 @@ func (a *apiProvider) Windows(p *pb.WindowsParams, r pb.BTrDB_WindowsServer) err
 	return err
 }
 func (a *apiProvider) StreamInfo(ctx context.Context, p *pb.StreamInfoParams) (*pb.StreamInfoResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "StreamInfo")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +419,7 @@ func (a *apiProvider) StreamInfo(ctx context.Context, p *pb.StreamInfoParams) (*
 }
 
 func (a *apiProvider) GetMetadataUsage(ctx context.Context, p *pb.MetadataUsageParams) (*pb.MetadataUsageResponse, error) {
-	err := a.checkPermissionsByCollection(ctx, p.Prefix, "GetMetadataUsage")
+	err := a.checkPermissionsByCollection(ctx, p.Prefix, "api", "read")
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +436,7 @@ func (a *apiProvider) GetMetadataUsage(ctx context.Context, p *pb.MetadataUsageP
 }
 
 func (a *apiProvider) SetStreamAnnotations(ctx context.Context, p *pb.SetStreamAnnotationsParams) (*pb.SetStreamAnnotationsResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "SetStreamAnnotations")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +453,7 @@ func (a *apiProvider) SetStreamAnnotations(ctx context.Context, p *pb.SetStreamA
 }
 func (a *apiProvider) Changes(p *pb.ChangesParams, r pb.BTrDB_ChangesServer) error {
 	ctx := r.Context()
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Changes")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return err
 	}
@@ -416,7 +484,7 @@ func (a *apiProvider) Changes(p *pb.ChangesParams, r pb.BTrDB_ChangesServer) err
 	return err
 }
 func (a *apiProvider) Create(ctx context.Context, p *pb.CreateParams) (*pb.CreateResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Create")
+	err := a.checkPermissionsByCollection(ctx, p.Collection, "api", "insert")
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +515,7 @@ func (a *apiProvider) ListCollections(ctx context.Context, p *pb.ListCollections
 	}
 	filtCollections := make([]string, 0, len(rv.Collections))
 	for _, col := range rv.Collections {
-		cerr := a.checkPermissionsByCollection(ctx, col, "ListCollections")
+		cerr := a.checkPermissionsByCollection(ctx, col, "api", "read")
 		if cerr != nil {
 			continue
 		}
@@ -486,7 +554,7 @@ func (a *apiProvider) LookupStreams(p *pb.LookupStreamsParams, r pb.BTrDB_Lookup
 			//Filter the results by permitted ones
 			nr := make([]*pb.StreamDescriptor, 0, len(resp.Results))
 			for _, res := range resp.Results {
-				sterr := a.checkPermissionsByCollection(ctx, res.Collection, "LookupStreams")
+				sterr := a.checkPermissionsByCollection(ctx, res.Collection, "api", "read")
 				if sterr != nil {
 					continue
 				}
@@ -503,7 +571,7 @@ func (a *apiProvider) LookupStreams(p *pb.LookupStreamsParams, r pb.BTrDB_Lookup
 }
 func (a *apiProvider) Nearest(ctx context.Context, p *pb.NearestParams) (*pb.NearestResponse, error) {
 
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Nearest")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +588,7 @@ func (a *apiProvider) Nearest(ctx context.Context, p *pb.NearestParams) (*pb.Nea
 }
 
 func (a *apiProvider) Insert(ctx context.Context, p *pb.InsertParams) (*pb.InsertResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Insert")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "insert")
 	if err != nil {
 		return nil, err
 	}
@@ -536,7 +604,7 @@ func (a *apiProvider) Insert(ctx context.Context, p *pb.InsertParams) (*pb.Inser
 	return rv, err
 }
 func (a *apiProvider) Delete(ctx context.Context, p *pb.DeleteParams) (*pb.DeleteResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Delete")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "delete")
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +621,7 @@ func (a *apiProvider) Delete(ctx context.Context, p *pb.DeleteParams) (*pb.Delet
 }
 
 func (a *apiProvider) Flush(ctx context.Context, p *pb.FlushParams) (*pb.FlushResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Flush")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "insert")
 	if err != nil {
 		return nil, err
 	}
@@ -570,7 +638,7 @@ func (a *apiProvider) Flush(ctx context.Context, p *pb.FlushParams) (*pb.FlushRe
 }
 
 func (a *apiProvider) Obliterate(ctx context.Context, p *pb.ObliterateParams) (*pb.ObliterateResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "Obliterate")
+	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "obliterate")
 	if err != nil {
 		return nil, err
 	}
@@ -587,7 +655,7 @@ func (a *apiProvider) Obliterate(ctx context.Context, p *pb.ObliterateParams) (*
 }
 
 func (a *apiProvider) FaultInject(ctx context.Context, p *pb.FaultInjectParams) (*pb.FaultInjectResponse, error) {
-	err := a.checkPermissionsByUUID(ctx, uuid.NewRandom(), "FaultInject")
+	err := a.checkPermissionsByUUID(ctx, uuid.NewRandom(), "api", "admin")
 	if err != nil {
 		return nil, err
 	}

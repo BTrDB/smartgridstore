@@ -226,7 +226,6 @@ func (a *apiProvider) ManifestDelPrefix(ctx context.Context, p *ManifestDelPrefi
 func (a *apiProvider) ManifestLsDevs(ctx context.Context, p *ManifestLsDevsParams) (*ManifestLsDevsResponse, error) {
 	u, ok := ctx.Value(UserObject).(*acl.User)
 	if !ok || !u.HasCapability("admin") {
-		fmt.Printf("XX\n")
 		return &ManifestLsDevsResponse{
 			Stat: &Status{
 				Code: bte.Unauthorized,
@@ -252,4 +251,54 @@ func (a *apiProvider) ManifestLsDevs(ctx context.Context, p *ManifestLsDevsParam
 		rv.Devices = append(rv.Devices, d)
 	}
 	return rv, nil
+}
+
+func (a *apiProvider) GetAPIKey(ctx context.Context, p *GetAPIKeyParams) (*APIKeyResponse, error) {
+	u, ok := ctx.Value(UserObject).(*acl.User)
+	if !ok {
+		return &APIKeyResponse{
+			Stat: &Status{
+				Code: bte.Unauthorized,
+				Msg:  "username/password incorrect",
+			},
+		}, nil
+	}
+	ae := acl.NewACLEngine(acl.DefaultPrefix, a.ec)
+	apik, err := ae.GetAPIKey(u.Username)
+	if err != nil {
+		return &APIKeyResponse{
+			Stat: &Status{
+				Code: bte.ManifestError,
+				Msg:  err.Error(),
+			},
+		}, nil
+	}
+	return &APIKeyResponse{
+		Apikey: apik,
+	}, nil
+}
+
+func (a *apiProvider) ResetAPIKey(ctx context.Context, p *ResetAPIKeyParams) (*APIKeyResponse, error) {
+	u, ok := ctx.Value(UserObject).(*acl.User)
+	if !ok {
+		return &APIKeyResponse{
+			Stat: &Status{
+				Code: bte.Unauthorized,
+				Msg:  "username/password incorrect",
+			},
+		}, nil
+	}
+	ae := acl.NewACLEngine(acl.DefaultPrefix, a.ec)
+	apik, err := ae.ResetAPIKey(u.Username)
+	if err != nil {
+		return &APIKeyResponse{
+			Stat: &Status{
+				Code: bte.ManifestError,
+				Msg:  err.Error(),
+			},
+		}, nil
+	}
+	return &APIKeyResponse{
+		Apikey: apik,
+	}, nil
 }

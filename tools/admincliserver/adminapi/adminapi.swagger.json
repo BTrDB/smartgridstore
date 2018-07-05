@@ -15,6 +15,32 @@
     "application/json"
   ],
   "paths": {
+    "/v4/getapikey": {
+      "post": {
+        "operationId": "GetAPIKey",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiAPIKeyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiGetAPIKeyParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
+    },
     "/v4/manifestadd": {
       "post": {
         "summary": "Requires Manifest capability",
@@ -119,9 +145,49 @@
           "BTrDBAdmin"
         ]
       }
+    },
+    "/v4/resetapikey": {
+      "post": {
+        "operationId": "ResetAPIKey",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/adminapiAPIKeyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/adminapiResetAPIKeyParams"
+            }
+          }
+        ],
+        "tags": [
+          "BTrDBAdmin"
+        ]
+      }
     }
   },
   "definitions": {
+    "adminapiAPIKeyResponse": {
+      "type": "object",
+      "properties": {
+        "stat": {
+          "$ref": "#/definitions/adminapiStatus"
+        },
+        "apikey": {
+          "type": "string"
+        }
+      }
+    },
+    "adminapiGetAPIKeyParams": {
+      "type": "object"
+    },
     "adminapiManifestAddParams": {
       "type": "object",
       "properties": {
@@ -226,6 +292,9 @@
           "type": "string"
         }
       }
+    },
+    "adminapiResetAPIKeyParams": {
+      "type": "object"
     },
     "adminapiStatus": {
       "type": "object",

@@ -326,6 +326,36 @@ func genUserCommands(su *singleUserModule) []admincli.CLIModule {
 			},
 		},
 		&admincli.GenericCLIModule{
+			MName:     "getapikey",
+			MHint:     "get the user's api key",
+			MUsage:    "",
+			MRunnable: true,
+			MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+				apikey, err := su.e.GetAPIKey(su.username)
+				if err != nil {
+					fmt.Fprintf(w, "failed: %v\n", err)
+					return true
+				}
+				fmt.Fprintf(w, "%s\n", apikey)
+				return true
+			},
+		},
+		&admincli.GenericCLIModule{
+			MName:     "resetapikey",
+			MHint:     "reset the user's api key",
+			MUsage:    "",
+			MRunnable: true,
+			MRun: func(ctx context.Context, w io.Writer, args ...string) bool {
+				apikey, err := su.e.ResetAPIKey(su.username)
+				if err != nil {
+					fmt.Fprintf(w, "failed: %v\n", err)
+					return true
+				}
+				fmt.Fprintf(w, "%s\n", apikey)
+				return true
+			},
+		},
+		&admincli.GenericCLIModule{
 			MName:     "describe",
 			MHint:     "print user info",
 			MUsage:    "",
@@ -336,17 +366,18 @@ func genUserCommands(su *singleUserModule) []admincli.CLIModule {
 					fmt.Fprintf(w, "failed: %v\n", err)
 					return true
 				}
-				fmt.Fprintf(w, "Groups: ")
-				for _, g := range u.Groups {
-					fmt.Fprintf(w, "%s ", g)
-				}
-				fmt.Fprintf(w, "\nCapabilities: ")
-				for _, c := range u.Capabilities {
-					fmt.Fprintf(w, "%s ", c)
-				}
-				fmt.Fprintf(w, "\nPrefixes:\n")
-				for _, p := range u.Prefixes {
-					fmt.Fprintf(w, " %q\n", p)
+				fmt.Fprintf(w, "Groups: \n")
+				for _, g := range u.FullGroups {
+					fmt.Fprintf(w, "%s ", g.Name)
+
+					fmt.Fprintf(w, "\n  Capabilities: ")
+					for _, c := range g.Capabilities {
+						fmt.Fprintf(w, "%s ", c)
+					}
+					fmt.Fprintf(w, "\n  Prefixes:\n")
+					for _, p := range g.Prefixes {
+						fmt.Fprintf(w, "   %q\n", p)
+					}
 				}
 				return true
 			},

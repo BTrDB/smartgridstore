@@ -3,10 +3,12 @@ package acl
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/gob"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,14 +20,19 @@ import (
 const DefaultPrefix = "btrdb"
 
 type ACLEngine struct {
-	c             *etcd.Client
-	prefix        string
-	cachedUsers   map[CachedUserKey]CachedUser
-	cachedUsersMu sync.Mutex
+	c                *etcd.Client
+	prefix           string
+	cachedUsers      map[CachedUserKey]CachedUser
+	cachedUsersByKey map[string]CachedUser
+	cachedUsersMu    sync.Mutex
 }
 
 func NewACLEngine(prefix string, c *etcd.Client) *ACLEngine {
-	return &ACLEngine{c: c, prefix: prefix, cachedUsers: make(map[CachedUserKey]CachedUser)}
+	return &ACLEngine{c: c,
+		prefix:           prefix,
+		cachedUsers:      make(map[CachedUserKey]CachedUser),
+		cachedUsersByKey: make(map[string]CachedUser),
+	}
 }
 
 type IdentityProvider string
@@ -59,6 +66,10 @@ func (e *ACLEngine) get(key string) ([]byte, error) {
 		return nil, nil
 	}
 	return resp.Kvs[0].Value, nil
+}
+func (e *ACLEngine) rm(key string) error {
+	_, err := e.c.Delete(context.Background(), fmt.Sprintf("%s/%s", e.prefix, key))
+	return err
 }
 
 func (e *ACLEngine) setstruct(key string, val interface{}) error {
@@ -239,6 +250,7 @@ func (e *ACLEngine) RemoveCapabilityFromGroup(group string, capability string) e
 		}
 		newcaps = append(newcaps, cap)
 	}
+	g.Capabilities = newcaps
 	return e.setstruct(fmt.Sprintf("auth/groups/%s", group), g)
 }
 
@@ -306,23 +318,44 @@ type BuiltinUser struct {
 }
 
 type User struct {
+	Username string
 	Groups   []string
 	Password string
 
 	//Calculated at load time
-	Prefixes     []string
-	Capabilities []string
+	FullGroups []Group
 }
 
 func (u *User) HasCapability(c string) bool {
-	for _, cap := range u.Capabilities {
-		if cap == c {
-			return true
+	for _, grp := range u.FullGroups {
+		for _, cap := range grp.Capabilities {
+			if cap == c {
+				return true
+			}
 		}
 	}
 	return false
 }
-
+func (u *User) HasCapabilityOnPrefix(c string, pfx string) bool {
+	for _, grp := range u.FullGroups {
+		found := false
+		for _, gpfx := range grp.Prefixes {
+			if strings.HasPrefix(pfx, gpfx) {
+				found = true
+			}
+			break
+		}
+		if !found {
+			continue
+		}
+		for _, cap := range grp.Capabilities {
+			if cap == c {
+				return true
+			}
+		}
+	}
+	return false
+}
 func (e *ACLEngine) WatchForAuthChanges(ctx context.Context) (chan struct{}, error) {
 	rv := make(chan struct{}, 10)
 	go func() {
@@ -355,7 +388,7 @@ func (e *ACLEngine) AuthenticateUser(name string, password string) (bool, *User,
 	e.cachedUsersMu.Lock()
 	cached, ok := e.cachedUsers[ck]
 	e.cachedUsersMu.Unlock()
-	if ok && cached.Expiry.Before(time.Now()) {
+	if ok && cached.Expiry.After(time.Now()) {
 		return ok, cached.User, nil
 	}
 	idp, err := e.GetIDP()
@@ -384,6 +417,73 @@ func (e *ACLEngine) AuthenticateUser(name string, password string) (bool, *User,
 	}
 	return false, nil, fmt.Errorf("unsupported identity provider")
 }
+func (e *ACLEngine) GetPublicUser() (*User, error) {
+	e.cachedUsersMu.Lock()
+	cached, ok := e.cachedUsersByKey["public"]
+	e.cachedUsersMu.Unlock()
+	if ok && cached.Expiry.After(time.Now()) {
+		fmt.Printf("expiry time: %s\n", cached.Expiry)
+		return cached.User, nil
+	}
+	fmt.Printf("public user cache miss\n")
+	rv := &User{
+		Username: "public",
+		Groups:   []string{"public"},
+	}
+	for _, gs := range rv.Groups {
+		g, err := e.GetGroup(gs)
+		if err != nil {
+			return nil, err
+		}
+		rv.FullGroups = append(rv.FullGroups, *g)
+	}
+
+	e.cachedUsersMu.Lock()
+	e.cachedUsersByKey["public"] = CachedUser{
+		User:   rv,
+		Expiry: time.Now().Add(UserCacheTime),
+	}
+	e.cachedUsersMu.Unlock()
+
+	return rv, nil
+}
+func (e *ACLEngine) AuthenticateUserByKey(apikey string) (bool, *User, error) {
+	apikey = strings.ToUpper(apikey)
+	e.cachedUsersMu.Lock()
+	cached, ok := e.cachedUsersByKey[apikey]
+	e.cachedUsersMu.Unlock()
+	if ok && cached.Expiry.After(time.Now()) {
+		return ok, cached.User, nil
+	}
+	uname, err := e.UserFromAPIKey(apikey)
+	if err != nil {
+		return false, nil, err
+	}
+	if uname == "" {
+		return false, nil, nil
+	}
+	idp, err := e.GetIDP()
+	if err != nil {
+		return false, nil, err
+	}
+	if idp == IDP_Builtin {
+		u, err := e.GetBuiltinUser(uname)
+		if err != nil {
+			return false, nil, err
+		}
+		if u == nil {
+			return false, nil, nil
+		}
+		e.cachedUsersMu.Lock()
+		e.cachedUsersByKey[apikey] = CachedUser{
+			User:   u,
+			Expiry: time.Now().Add(UserCacheTime),
+		}
+		e.cachedUsersMu.Unlock()
+		return true, u, nil
+	}
+	return false, nil, fmt.Errorf("unsupported identity provider")
+}
 func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 	bu := &BuiltinUser{}
 	found, err := e.getstruct(fmt.Sprintf("auth/users/%s", name), bu)
@@ -394,6 +494,7 @@ func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 		return nil, nil
 	}
 	rv := &User{
+		Username: name,
 		Password: bu.Password,
 		Groups:   bu.Groups,
 	}
@@ -406,54 +507,42 @@ func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 	if !haspublic {
 		rv.Groups = append(rv.Groups, "public")
 	}
-	pfxs := make(map[string]bool)
-	caps := make(map[string]bool)
 	for _, gs := range rv.Groups {
 		g, err := e.GetGroup(gs)
 		if err != nil {
 			return nil, err
 		}
-		for _, p := range g.Prefixes {
-			pfxs[p] = true
-		}
-		for _, p := range g.Capabilities {
-			caps[p] = true
-		}
-	}
-	for cap, _ := range caps {
-		rv.Capabilities = append(rv.Capabilities, cap)
-	}
-	for pfx, _ := range pfxs {
-		rv.Prefixes = append(rv.Prefixes, pfx)
+		rv.FullGroups = append(rv.FullGroups, *g)
 	}
 	return rv, nil
 }
-func (e *ACLEngine) ConstructUser(groups []string) (*User, error) {
-	rv := &User{
-		Groups: groups,
-	}
-	pfxs := make(map[string]bool)
-	caps := make(map[string]bool)
-	for _, gs := range groups {
-		g, err := e.GetGroup(gs)
-		if err != nil {
-			return nil, err
-		}
-		for _, p := range g.Prefixes {
-			pfxs[p] = true
-		}
-		for _, p := range g.Capabilities {
-			caps[p] = true
-		}
-	}
-	for cap, _ := range caps {
-		rv.Capabilities = append(rv.Capabilities, cap)
-	}
-	for pfx, _ := range pfxs {
-		rv.Prefixes = append(rv.Prefixes, pfx)
-	}
-	return rv, nil
-}
+
+// func (e *ACLEngine) ConstructUser(groups []string) (*User, error) {
+// 	rv := &User{
+// 		Groups: groups,
+// 	}
+// 	pfxs := make(map[string]bool)
+// 	caps := make(map[string]bool)
+// 	for _, gs := range groups {
+// 		g, err := e.GetGroup(gs)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		for _, p := range g.Prefixes {
+// 			pfxs[p] = true
+// 		}
+// 		for _, p := range g.Capabilities {
+// 			caps[p] = true
+// 		}
+// 	}
+// 	for cap, _ := range caps {
+// 		rv.Capabilities = append(rv.Capabilities, cap)
+// 	}
+// 	for pfx, _ := range pfxs {
+// 		rv.Prefixes = append(rv.Prefixes, pfx)
+// 	}
+// 	return rv, nil
+// }
 func (e *ACLEngine) GetAllUsers() ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	resp, err := e.c.Get(ctx, fmt.Sprintf("%s/auth/users/", e.prefix), etcd.WithPrefix())
@@ -534,6 +623,41 @@ func (e *ACLEngine) DeleteUser(username string) error {
 	}
 	_, err = e.c.Delete(context.Background(), fmt.Sprintf("%s/auth/users/%s", e.prefix, username))
 	return err
+}
+func (e *ACLEngine) GetAPIKey(username string) (string, error) {
+	k, err := e.get("apikey/u/" + username)
+	if err != nil {
+		return "", err
+	}
+	if string(k) == "" {
+		return e.ResetAPIKey(username)
+	}
+	return string(k), nil
+}
+func (e *ACLEngine) UserFromAPIKey(apik string) (string, error) {
+	u, err := e.get("apikey/k/" + apik)
+	if err != nil {
+		return "", err
+	}
+	return string(u), nil
+}
+func (e *ACLEngine) ResetAPIKey(username string) (string, error) {
+	//Find the old API key
+	k, err := e.get("apikey/u/" + username)
+	if err != nil {
+		return "", err
+	}
+	if len(k) != 0 {
+		e.rm("apikey/k/" + string(k))
+		e.rm("apikey/u/" + username)
+	}
+	//Create new one
+	newkeybin := make([]byte, 12)
+	rand.Read(newkeybin)
+	newkey := fmt.Sprintf("%X", newkeybin)
+	e.set("apikey/u/"+username, newkey)
+	e.set("apikey/k/"+newkey, username)
+	return newkey, nil
 }
 func (e *ACLEngine) SetPassword(username, password string) error {
 	if username != "admin" {
