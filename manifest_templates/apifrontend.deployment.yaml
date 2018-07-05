@@ -23,7 +23,7 @@ spec:
           - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410{{if gt (len .SiteInfo.ExternalIPs) 0 }}
           - name: EXTERNAL_ADDRESS
-            value: {{ index .SiteInfo.ExternalIPs 0 }}:4410{{end}}
+            value: {{ index .SiteInfo.ExternalIPs 0 }}{{end}}
         ports:
           - containerPort: 4410
             protocol: TCP

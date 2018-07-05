@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"sync"
 
 	"os"
 	"strings"
@@ -43,6 +44,9 @@ type apiProvider struct {
 	s          *grpc.Server
 	downstream *btrdb.BTrDB
 	ae         *acl.ACLEngine
+	colUUcache map[[16]byte]string
+	colUUmu    sync.Mutex
+	secure     bool
 }
 
 var logger *logging.Logger
@@ -129,13 +133,22 @@ func (a *apiProvider) anyEndpoint(ctx context.Context) (*btrdb.Endpoint, error) 
 // 	return nil, nil
 // }
 func (a *apiProvider) checkPermissionsByUUID(ctx context.Context, uu uuid.UUID, cap ...string) error {
-	s := a.downstream.StreamFromUUID(uu)
-	col, err := s.Collection(ctx)
-	if err != nil {
-		if e := btrdb.ToCodedError(err); e != nil && e.Code == 404 {
-			return grpc.Errorf(codes.PermissionDenied, "user does not have permission on this stream")
+	a.colUUmu.Lock()
+	col, ok := a.colUUcache[uu.Array()]
+	a.colUUmu.Unlock()
+	if !ok {
+		var err error
+		s := a.downstream.StreamFromUUID(uu)
+		col, err = s.Collection(ctx)
+		if err != nil {
+			if e := btrdb.ToCodedError(err); e != nil && e.Code == 404 {
+				return grpc.Errorf(codes.PermissionDenied, "user does not have permission on this stream")
+			}
+			return err
 		}
-		return err
+		a.colUUmu.Lock()
+		a.colUUcache[uu.Array()] = col
+		a.colUUmu.Unlock()
 	}
 	return a.checkPermissionsByCollection(ctx, col, cap...)
 }
@@ -186,7 +199,8 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 	if err != nil {
 		panic(err)
 	}
-	api := &apiProvider{downstream: downstream}
+	api := &apiProvider{downstream: downstream, colUUcache: make(map[[16]byte]string)}
+	api.secure = true
 	ae := acl.NewACLEngine(acl.DefaultPrefix, etcdClient)
 	api.ae = ae
 	//--
@@ -223,7 +237,8 @@ func ProxyGRPC(laddr string) GRPCInterface {
 	if err != nil {
 		panic(err)
 	}
-	api := &apiProvider{downstream: downstream}
+	api := &apiProvider{downstream: downstream, colUUcache: make(map[[16]byte]string)}
+	api.secure = false
 	ae := acl.NewACLEngine(acl.DefaultPrefix, etcdClient)
 	api.ae = ae
 	//--
@@ -669,12 +684,18 @@ func (a *apiProvider) FaultInject(ctx context.Context, p *pb.FaultInjectParams) 
 
 func (a *apiProvider) Info(ctx context.Context, params *pb.InfoParams) (*pb.InfoResponse, error) {
 	//We do not forward the info call, as we want the client to always contact us
-	ourip := "127.0.0.1:4410"
+	ourip := "localhost"
 	if ex := os.Getenv("EXTERNAL_ADDRESS"); ex != "" {
 		ourip = ex
 	}
+	parts := strings.SplitN(ourip, ":", 2)
+	ourip = parts[0]
+	suffix := ":4410"
+	if a.secure {
+		suffix = ":4411"
+	}
 	ProxyInfo := &pb.ProxyInfo{
-		ProxyEndpoints: []string{ourip},
+		ProxyEndpoints: []string{ourip + suffix},
 	}
 	return &pb.InfoResponse{
 		MajorVersion: MajorVersion,

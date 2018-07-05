@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cat >devmachine-localhost.ca.pem << EOF
+cat >devmachine-localhost.ca.crt << EOF
 -----BEGIN CERTIFICATE-----
 MIIDnzCCAoegAwIBAgIJAPRK/R59kVNbMA0GCSqGSIb3DQEBCwUAMGYxCzAJBgNV
 BAYTAlVTMREwDwYDVQQIDAhEZXZUb3BpYTEXMBUGA1UEBwwOTXlMb2NhbE1hY2hp
@@ -90,4 +90,7 @@ EOSCRIPT
 set -x
 docker restart devmachine-console
 set +x
-echo "We have created a 'devmachine-localhost.ca.pem' file. Add this to your browser's Certificate Authorities and everything will just work"
+echo "We have created a 'devmachine-localhost.ca.crt' file. Add this to your browser's Certificate Authorities and everything will just work"
+echo "For non-browser use, copy the pem file to /usr/local/share/ca-certificates/btrdb/ and ensure it is world-readable. Then run sudo update-ca-certificates"
+echo "Ensure that the API endpoint is given as localhost:4411. Using an IP address will not work"
+echo "For python you also need to run export BTRDB_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt to make grpc use system ssl certificates"
