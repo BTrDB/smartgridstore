@@ -10,7 +10,7 @@ import (
 
 	"github.com/BTrDB/btrdb-server/bte"
 	"github.com/pborman/uuid"
-	v4 "gopkg.in/btrdb.v4"
+	v4 "gopkg.in/BTrDB/btrdb.v4"
 	pb "gopkg.in/cheggaaa/pb.v1"
 	yaml "gopkg.in/yaml.v2"
 )

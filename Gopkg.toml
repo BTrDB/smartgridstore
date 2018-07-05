@@ -98,10 +98,6 @@
   name = "gopkg.in/BTrDB/btrdb.v4"
 
 [[constraint]]
-  branch = "v4"
-  name = "gopkg.in/btrdb.v4"
-
-[[constraint]]
   name = "gopkg.in/cheggaaa/pb.v1"
   version = "1.0.22"
 

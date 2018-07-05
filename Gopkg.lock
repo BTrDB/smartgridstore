@@ -5,7 +5,7 @@
   branch = "v4"
   name = "github.com/BTrDB/btrdb"
   packages = ["."]
-  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
+  revision = "6cd4be5e776b98ce2480811e2d17f5b5cb663bfe"
 
 [[projects]]
   branch = "master"
@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "6f8450b2e77da00b5b94b7e095445be2f8fb3051"
+  revision = "b678a5a510a1ca43597619712f96157b1456b1f2"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "aa8bb1fb8640696398a188104a6b5a135e1948d2"
+  revision = "5320617fce73bb80d358f00044d3fb9e08f4db4f"
 
 [[projects]]
   branch = "master"
@@ -67,7 +67,7 @@
     "raft",
     "raft/raftpb"
   ]
-  revision = "acf75ddc5b0940ce2f83ae7843efa9b87c7ec2cd"
+  revision = "dbccfe06fb58ea02a5070f7ae892a0f0adff1922"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -269,7 +269,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "7d6f385de8bea29190f15ba9931442a0eaef9af7"
+  revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
 
 [[projects]]
   branch = "master"
@@ -359,7 +359,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
 
 [[projects]]
   branch = "master"
@@ -368,7 +368,7 @@
     "unix",
     "windows"
   ]
-  revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
+  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -398,7 +398,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "80063a038e333bbe006c878e4c5ce4c74d055498"
+  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -440,19 +440,13 @@
     ".",
     "grpcinterface"
   ]
-  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
+  revision = "6cd4be5e776b98ce2480811e2d17f5b5cb663bfe"
 
 [[projects]]
   name = "gopkg.in/VividCortex/ewma.v1"
   packages = ["."]
   revision = "b24eb346a94c3ba12c1da1e564dbac1b498a77ce"
   version = "v1.1.1"
-
-[[projects]]
-  branch = "v4"
-  name = "gopkg.in/btrdb.v4"
-  packages = ["."]
-  revision = "87cc95b87f65ccd8fe2221ee22bd63d0ef9d1ff6"
 
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v1"
@@ -517,7 +511,7 @@
     "bson",
     "internal/json"
   ]
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
+  revision = "9856a29383ce1c59f308dd1cf0363a79b5bef6b5"
 
 [[projects]]
   name = "gopkg.in/warnings.v0"
@@ -534,6 +528,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3b3c654c965bac66f0b2a2ffa5055f7be3b11b219b1477e56c0c507fce926750"
+  inputs-digest = "cff58ace19d3168b10b130679592a15eff628be05a07b109d19b3c6612841be4"
   solver-name = "gps-cdcl"
   solver-version = 1

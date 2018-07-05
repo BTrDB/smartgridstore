@@ -13,7 +13,7 @@ import (
 	"github.com/BTrDB/smartgridstore/tools/importman/plugins"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pborman/uuid"
-	btrdb "gopkg.in/btrdb.v4"
+	btrdb "gopkg.in/BTrDB/btrdb.v4"
 	pb "gopkg.in/cheggaaa/pb.v2"
 )
 
