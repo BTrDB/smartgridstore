@@ -416,6 +416,41 @@ func (a *apiProvider) Windows(p *pb.WindowsParams, r pb.BTrDB_WindowsServer) err
 	}
 	return err
 }
+func (a *apiProvider) GenerateCSV(p *pb.GenerateCSVParams, r pb.BTrDB_GenerateCSVServer) error {
+	ctx := r.Context()
+	for _, s := range p.Streams {
+		err := a.checkPermissionsByUUID(ctx, s.Uuid, "api", "read")
+		if err != nil {
+			return err
+		}
+	}
+	var ep *btrdb.Endpoint
+	var err error
+	for a.downstream.TestEpError(ep, err) {
+		ep, err = a.anyEndpoint(ctx)
+		if err != nil {
+			continue
+		}
+		client, err := ep.GetGRPC().GenerateCSV(ctx, p)
+		if err != nil {
+			continue
+		}
+		for {
+			resp, err := client.Recv()
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			err = r.Send(resp)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
 func (a *apiProvider) StreamInfo(ctx context.Context, p *pb.StreamInfoParams) (*pb.StreamInfoResponse, error) {
 	err := a.checkPermissionsByUUID(ctx, p.GetUuid(), "api", "read")
 	if err != nil {
