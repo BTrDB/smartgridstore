@@ -422,7 +422,6 @@ func (e *ACLEngine) GetPublicUser() (*User, error) {
 	cached, ok := e.cachedUsersByKey["public"]
 	e.cachedUsersMu.Unlock()
 	if ok && cached.Expiry.After(time.Now()) {
-		fmt.Printf("expiry time: %s\n", cached.Expiry)
 		return cached.User, nil
 	}
 	fmt.Printf("public user cache miss\n")

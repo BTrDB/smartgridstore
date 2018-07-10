@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/BTrDB/btrdb"
-	"github.com/immesys/rados"
+	"github.com/immesys/go-ceph/rados"
 	"github.com/pborman/uuid"
 	"github.com/urfave/cli"
 )
