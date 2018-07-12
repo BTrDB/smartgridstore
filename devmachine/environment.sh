@@ -10,7 +10,7 @@ export OSDBASE=$DEVMACHINE_BASE/ceph
 export ETCDBASE=$DEVMACHINE_BASE/etcd
 
 # which version of BTrDB and tools to install
-export VERSION=4.12.0
+export VERSION=4.13.1
 
 # pick which branch to use
 export PREFIX=""
@@ -29,6 +29,7 @@ export CONTAINER_PREFIX=devmachine-
 
 export HOTPOOL=btrdbhot
 export COLDPOOL=btrdbcold
+export JOURNALPOOL=btrdbjournal
 
 # the port on the host to bind the plotter to
 export PLOTTER_PORT=8888

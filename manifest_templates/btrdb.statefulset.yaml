@@ -47,6 +47,8 @@ spec:
             value: {{.SiteInfo.Ceph.BTrDBHotPool}}
           - name: CEPH_DATA_POOL
             value: {{.SiteInfo.Ceph.BTrDBDataPool}}
+          - name: CEPH_JOURNAL_POOL
+            value: {{.SiteInfo.Ceph.BTrDBJournalPool}}
           - name: BTRDB_BLOCK_CACHE
             value: "1000000"
           - name: BTRDB_ENABLE_OVERWATCH

@@ -15,10 +15,11 @@ type SiteConfig struct {
 	} `yaml:"containers"`
 	SiteInfo struct {
 		Ceph struct {
-			StagingPool   string `yaml:"stagingPool"`
-			BTrDBDataPool string `yaml:"btrdbDataPool"`
-			BTrDBHotPool  string `yaml:"btrdbHotPool"`
-			RBDPool       string `yaml:"rbdPool"`
+			StagingPool      string `yaml:"stagingPool"`
+			BTrDBDataPool    string `yaml:"btrdbDataPool"`
+			BTrDBHotPool     string `yaml:"btrdbHotPool"`
+			BTrDBJournalPool string `yaml:"btrdbJournalPool"`
+			RBDPool          string `yaml:"rbdPool"`
 		} `yaml:"ceph"`
 		Etcd struct {
 			Nodes   []string `yaml:"nodes"`
@@ -48,6 +49,10 @@ siteInfo:
     # the btrdb hot pool is used for more performance-sensitive
     # data. It can be smaller and is usually backed by SSDs
     btrdbHotPool: btrdb_hot
+    # the btrdb journal pool is small and used to aggregate write
+    # load into better-performing batches. It should be backed by
+    # a very high performance pool
+    btrdbJournalPool: btrdb_journal
     # the RBD pool is used to provision persistent storage for
     # kubernetes pods. It can use spinning metal.
     rbdPool: rbd

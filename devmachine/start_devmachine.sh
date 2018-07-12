@@ -17,6 +17,7 @@ check_var CONTAINER_PREFIX
 check_var SUB24
 check_var HOTPOOL
 check_var COLDPOOL
+check_var JOURNALPOOL
 check_var PLOTTER_PORT
 check_var CONSOLE_PORT
 check_var API_GRPC_PORT
@@ -185,7 +186,19 @@ then
     exit 1
   fi
 else
-  echo "[INFO] hot pool exists"
+  echo "[INFO] cold pool exists"
+fi
+
+if ! bin/dvceph osd pool get ${JOURNALPOOL} size >/dev/null 2>&1
+then
+  # maybe it doesn't exist
+  if ! bin/dvceph osd pool create ${JOURNALPOOL} 16 16 2>&1 | sed "s/^/[INFO][POOL CREATE] /"
+  then
+    echo "could not create journal pool"
+    exit 1
+  fi
+else
+  echo "[INFO] journal pool exists"
 fi
 
 # run the btrdb ensuredb command
@@ -196,6 +209,7 @@ docker run -it \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e CEPH_HOT_POOL=${HOTPOOL} \
+  -e CEPH_JOURNAL_POOL=${JOURNALPOOL} \
   -e BTRDB_BLOCK_CACHE=62500 \
   -e CEPH_DATA_POOL=${COLDPOOL} \
   -e MY_POD_IP=${SUB24}.21 \
@@ -216,6 +230,7 @@ OPUT=$(docker run -d \
   -v ${OSDBASE}/etc/ceph:/etc/ceph \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
   -e CEPH_HOT_POOL=${HOTPOOL} \
+  -e CEPH_JOURNAL_POOL=${JOURNALPOOL} \
   -e BTRDB_BLOCK_CACHE=62500 \
   -e BTRDB_ENABLE_OBLITERATE=YES \
   -e CEPH_DATA_POOL=${COLDPOOL} \
