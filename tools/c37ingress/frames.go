@@ -375,7 +375,7 @@ func ReadPhasor(format uint16, unit uint32, r io.Reader) (mag float64, ang float
 		//Polar coordinates
 		if format&2 == 0 {
 			//16 bit integer
-			fmt.Printf("CASE C\n")
+			//fmt.Printf("CASE C\n")
 			var mag uint16
 			var ang uint16
 			err := binary.Read(r, binary.BigEndian, &mag)

@@ -29,7 +29,7 @@ type SK struct {
 	Stream     string
 }
 
-var names map[uuid.Array]SK
+var names map[string]SK
 
 var streams []string = []string{"L1MAG", "L2MAG", "L3MAG", "L1ANG", "L2ANG", "L3ANG", "C1MAG", "C2MAG", "C3MAG", "C1ANG", "C2ANG", "C3ANG", "LSTATE", "FUND_DPF", "FUND_VA", "FUND_VAR", "FUND_W", "FREQ_L1_1S", "FREQ_L1_C37"}
 
@@ -47,6 +47,7 @@ func getUUID(serial string, streamname string) uuid.UUID {
 }
 
 func main() {
+	names = make(map[string]SK)
 	data, err := ioutil.ReadFile("mapping.txt")
 	if err != nil {
 		fmt.Printf("you need to have a file called mapping.txt\n")
@@ -54,11 +55,14 @@ func main() {
 	}
 	lines := bytes.Split(data, []byte("\n"))
 	for _, l := range lines {
+		if len(strings.TrimSpace(string(l))) == 0 {
+			continue
+		}
 		kv := strings.Split(string(l), "=")
 		collection := strings.TrimSpace(kv[1])
 		for _, s := range streams {
 			uu := getUUID(kv[0], s)
-			names[uu.Array()] = SK{
+			names[uu.String()] = SK{
 				Collection: collection,
 				Stream:     s,
 			}
@@ -163,8 +167,9 @@ func FindStreams() {
 	fmt.Printf("found %d orphans and %d okay streams\n", found, skipped)
 	mapped := 0
 	for _, s := range torecover {
-		_, ok := names[s.uuid.Array()]
+		x, ok := names[s.uuid.String()]
 		if ok {
+			fmt.Printf("found uuid %q for mapping (%s)\n", s.uuid.String(), x.Collection)
 			mapped++
 		}
 	}
@@ -178,7 +183,7 @@ func FindStreams() {
 
 	for _, r := range torecover {
 		var collection, name string
-		sk, ok := names[r.uuid.Array()]
+		sk, ok := names[r.uuid.String()]
 		if ok {
 			collection = sk.Collection
 			name = sk.Stream
