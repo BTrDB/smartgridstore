@@ -25,13 +25,14 @@
 #   unused-packages = true
 
 
-[[constraint]]
-  name = "github.com/BTrDB/btrdb-server"
-  branch = "master"
 
 [[constraint]]
   branch = "master"
   name = "github.com/BTrDB/mr-plotter"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/BTrDB/btrdb-server"
 
 [[constraint]]
   branch = "master"
