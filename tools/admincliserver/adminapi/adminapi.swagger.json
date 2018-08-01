@@ -207,6 +207,9 @@
       "properties": {
         "stat": {
           "$ref": "#/definitions/adminapiStatus"
+        },
+        "deviceid": {
+          "type": "string"
         }
       }
     },
@@ -243,6 +246,9 @@
       "properties": {
         "stat": {
           "$ref": "#/definitions/adminapiStatus"
+        },
+        "deviceid": {
+          "type": "string"
         }
       }
     },

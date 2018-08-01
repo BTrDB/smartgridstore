@@ -152,12 +152,19 @@ func (a *apiProvider) ManifestAdd(ctx context.Context, p *ManifestAddParams) (*M
 			},
 		}, nil
 	}
+	if p.Deviceid == "" {
+		return &ManifestAddResponse{
+			Stat: &Status{
+				Code: bte.InvalidParameter,
+				Msg:  "Device ID may not be empty",
+			},
+		}, nil
+	}
 	metadata := make(map[string]string)
 	for _, kv := range p.Metadata {
 		metadata[kv.Key] = kv.Value
 	}
-	dev := &manifest.ManifestDevice{Descriptor: p.Deviceid, Metadata: metadata, Streams: make(map[string]*manifest.ManifestDeviceStream)}
-	success, err := manifest.UpsertManifestDeviceAtomically(ctx, a.ec, dev)
+	md, err := manifest.RetrieveManifestDevice(ctx, a.ec, p.Deviceid)
 	if err != nil {
 		return &ManifestAddResponse{
 			Stat: &Status{
@@ -166,7 +173,7 @@ func (a *apiProvider) ManifestAdd(ctx context.Context, p *ManifestAddParams) (*M
 			},
 		}, nil
 	}
-	if !success {
+	if md != nil {
 		return &ManifestAddResponse{
 			Stat: &Status{
 				Code: bte.ManifestDeviceDuplicated,
@@ -174,7 +181,17 @@ func (a *apiProvider) ManifestAdd(ctx context.Context, p *ManifestAddParams) (*M
 			},
 		}, nil
 	}
-	return &ManifestAddResponse{}, nil
+	dev := &manifest.ManifestDevice{Descriptor: p.Deviceid, Metadata: metadata, Streams: make(map[string]*manifest.ManifestDeviceStream)}
+	err = manifest.UpsertManifestDevice(ctx, a.ec, dev)
+	if err != nil {
+		return &ManifestAddResponse{
+			Stat: &Status{
+				Code: bte.ManifestError,
+				Msg:  err.Error(),
+			},
+		}, nil
+	}
+	return &ManifestAddResponse{Deviceid: p.Deviceid}, nil
 }
 
 func (a *apiProvider) ManifestDel(ctx context.Context, p *ManifestDelParams) (*ManifestDelResponse, error) {
@@ -187,7 +204,7 @@ func (a *apiProvider) ManifestDel(ctx context.Context, p *ManifestDelParams) (*M
 			},
 		}, nil
 	}
-	err := manifest.DeleteManifestDevice(ctx, a.ec, p.Deviceid)
+	md, err := manifest.RetrieveManifestDevice(ctx, a.ec, p.Deviceid)
 	if err != nil {
 		return &ManifestDelResponse{
 			Stat: &Status{
@@ -196,7 +213,24 @@ func (a *apiProvider) ManifestDel(ctx context.Context, p *ManifestDelParams) (*M
 			},
 		}, nil
 	}
-	return &ManifestDelResponse{}, nil
+	if md == nil {
+		return &ManifestDelResponse{
+			Stat: &Status{
+				Code: bte.ManifestDeviceDoesntExist,
+				Msg:  "No device exists with that deviceid",
+			},
+		}, nil
+	}
+	err = manifest.DeleteManifestDevice(ctx, a.ec, p.Deviceid)
+	if err != nil {
+		return &ManifestDelResponse{
+			Stat: &Status{
+				Code: bte.ManifestError,
+				Msg:  err.Error(),
+			},
+		}, nil
+	}
+	return &ManifestDelResponse{Deviceid: p.Deviceid}, nil
 }
 
 func (a *apiProvider) ManifestDelPrefix(ctx context.Context, p *ManifestDelPrefixParams) (*ManifestDelPrefixResponse, error) {
@@ -215,6 +249,14 @@ func (a *apiProvider) ManifestDelPrefix(ctx context.Context, p *ManifestDelPrefi
 			Stat: &Status{
 				Code: bte.ManifestError,
 				Msg:  err.Error(),
+			},
+		}, nil
+	}
+	if n == 0 {
+		return &ManifestDelPrefixResponse{
+			Stat: &Status{
+				Code: bte.ManifestDeviceDoesntExist,
+				Msg:  "No devices exist with this device id pattern",
 			},
 		}, nil
 	}

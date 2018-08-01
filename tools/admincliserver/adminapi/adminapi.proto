@@ -61,6 +61,7 @@ message ManifestAddParams {
 }
 message ManifestAddResponse {
   Status stat = 1;
+  string deviceid = 2;
 }
 message MetaKeyValue {
   string key = 1;
@@ -72,6 +73,7 @@ message ManifestDelParams {
 }
 message ManifestDelResponse {
   Status stat = 1;
+  string deviceid = 2;
 }
 
 message ManifestDelPrefixParams {
