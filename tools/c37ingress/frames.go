@@ -342,7 +342,6 @@ func ReadPhasor(format uint16, unit uint32, r io.Reader) (mag float64, ang float
 			if err != nil {
 				return 0, 0, false, err
 			}
-			fmt.Printf("CASE A\n")
 			freal := float64(real)
 			fimag := float64(imag)
 			freal = freal * float64(unit&0xFFFFFF) * 10e-5
@@ -355,7 +354,6 @@ func ReadPhasor(format uint16, unit uint32, r io.Reader) (mag float64, ang float
 
 		} else {
 			//32 bit float
-			fmt.Printf("CASE B\n")
 			var real float32
 			var imag float32
 			err := binary.Read(r, binary.BigEndian, &real)
@@ -375,7 +373,6 @@ func ReadPhasor(format uint16, unit uint32, r io.Reader) (mag float64, ang float
 		//Polar coordinates
 		if format&2 == 0 {
 			//16 bit integer
-			//fmt.Printf("CASE C\n")
 			var mag uint16
 			var ang uint16
 			err := binary.Read(r, binary.BigEndian, &mag)
@@ -496,7 +493,6 @@ func ReadDataFrame(ch *CommonHeader, cfg *Config12Frame, r io.Reader) (*DataFram
 	rv.TIMEBASE = int(cfg.TIME_BASE)
 	for pmu := 0; pmu < int(cfg.NUM_PMU); pmu++ {
 		d := PMUData{}
-
 		err := binary.Read(r, binary.BigEndian, &d.STAT)
 		if err != nil {
 			return nil, err
