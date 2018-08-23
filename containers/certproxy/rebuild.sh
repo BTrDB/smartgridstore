@@ -3,7 +3,7 @@ set -ex
 
 pushd ../../tools/certproxy/
 go build
-ver=${./certproxy -version}
+ver=$(./certproxy -version)
 cp certproxy ../../containers/certproxy/
 popd
 

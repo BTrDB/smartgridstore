@@ -244,10 +244,18 @@ func loadEtcDirectory(cd *CertDetails) bool {
 			fmt.Printf("failed to create directory: %v\n", err)
 			os.Exit(1)
 		}
-		err = ioutil.WriteFile(kpath, content, 0555)
-		if err != nil {
-			fmt.Printf("failed to write file: %v\n", err)
-			os.Exit(1)
+		if content[0] == 'B' {
+			err = ioutil.WriteFile(kpath, content[1:], 0555)
+			if err != nil {
+				fmt.Printf("failed to write file: %v\n", err)
+				os.Exit(1)
+			}
+		} else if content[0] == 'S' {
+			err := os.Symlink(string(content[1:]), string(kpath))
+			if err != nil {
+				fmt.Printf("failed to symlink: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 	fmt.Printf("finished loading etcd directory\n")
@@ -262,12 +270,22 @@ func walk(dir string, files map[string][]byte) {
 		if info.IsDir() {
 			//do nothing, we will traverse into the directory anyway
 		} else {
-			content, err := ioutil.ReadFile(path)
-			if err != nil {
-				fmt.Printf("file read error: %v\n", err)
-				os.Exit(1)
+			if !info.Mode().IsRegular() {
+				link, err := os.Readlink(path)
+				if err != nil {
+					fmt.Printf("file walk error: %v\n", err)
+					os.Exit(1)
+				}
+				files[path] = []byte("S" + link)
+			} else {
+				content, err := ioutil.ReadFile(path)
+				if err != nil {
+					fmt.Printf("file read error: %v\n", err)
+					os.Exit(1)
+				}
+				prefixedcontent := append([]byte("B"), content...)
+				files[path] = prefixedcontent
 			}
-			files[path] = content
 		}
 		return nil
 	})

@@ -34,7 +34,13 @@ upstream {{ $key }} {
 {{ end }}
 
 server {
-    listen              80;
+	listen 80 default_server;
+	listen [::]:80 default_server;
+	server_name _;
+	return 301 https://$host$request_uri;
+}
+
+server {
     listen              443 ssl; # 'ssl' parameter tells NGINX to decrypt the traffic
     server_name         {{ .Servername }};
     ssl_certificate     {{ .Certificate }};
