@@ -177,7 +177,7 @@ func (a *apiProvider) ManifestAdd(ctx context.Context, p *ManifestAddParams) (*M
 		return &ManifestAddResponse{
 			Stat: &Status{
 				Code: bte.ManifestDeviceDuplicated,
-				Msg:  err.Error(),
+				Msg:  "Device already exists",
 			},
 		}, nil
 	}
