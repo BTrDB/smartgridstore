@@ -87,6 +87,16 @@ then
 fi
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/certproxy
+go build
+certproxy_ver=`./certproxy -version`
+if [[ "$certproxy_ver" != "$target_ver" ]]
+then
+  echo "cert proxy version mismatch - got $certproxy_ver"
+  exit 1
+fi
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/pmu2btrdb
 go build
 pmu2btrdb_ver=`./pmu2btrdb -version`
@@ -142,6 +152,11 @@ cp ../../tools/c37ingress/c37ingress .
 docker build -t btrdb/${PFX}c37ingress:$target_ver .
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/certproxy
+cp ../../tools/certproxy/certproxy .
+docker build -t btrdb/${PFX}certproxy:$target_ver .
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/receiver
 cp ../../tools/receiver/receiver .
 docker build -t btrdb/${PFX}receiver:$target_ver .
@@ -157,13 +172,14 @@ cp ../../tools/simulator/simulator .
 docker build -t btrdb/${PFX}simulator:$target_ver .
 popd
 
-echo "All containers built ok for $PFX-$target_ver , pushing containers"
+echo "All containers built ok for $PFX$target_ver , pushing containers"
 
 docker push btrdb/${PFX}mrplotter:$target_ver
 docker push btrdb/${PFX}console:$target_ver
 docker push btrdb/${PFX}ingester:$target_ver
 docker push btrdb/${PFX}apifrontend:$target_ver
 docker push btrdb/${PFX}c37ingress:$target_ver
+docker push btrdb/${PFX}certproxy:$target_ver
 docker push btrdb/${PFX}receiver:$target_ver
 docker push btrdb/${PFX}pmu2btrdb:$target_ver
 docker push btrdb/${PFX}simulator:$target_ver
