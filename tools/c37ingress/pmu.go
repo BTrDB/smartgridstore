@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -149,16 +150,31 @@ func (p *PMU) GetBatch() (map[uint16][]*DataFrame, bool) {
 }
 
 func (p *PMU) initialConfigure() {
-	time.Sleep(1 * time.Second)
-	c := &CommandFrame{}
-	c.IDCODE = p.id
-	c.SetSOCToNow()
-	c.SetSyncType(SYNC_TYPE_CMD)
-	c.FRAMESIZE = CommonHeaderLength + 4
-	c.CMD = uint16(CMD_SEND_CFG1)
-	err := WriteChecksummedFrame(c, p.conn)
-	if err != nil {
-		panic(err)
+	{
+		c := &CommandFrame{}
+		c.IDCODE = p.id
+		c.SetSOCToNow()
+		c.FRACSEC = 0
+		c.SetSyncType(SYNC_TYPE_CMD)
+		c.FRAMESIZE = CommonHeaderLength + 4
+		c.CMD = uint16(CMD_SEND_CFG2)
+		err := WriteChecksummedFrame(c, p.conn)
+		if err != nil {
+			panic(err)
+		}
+	}
+	{
+		c := &CommandFrame{}
+		c.IDCODE = p.id
+		c.SetSOCToNow()
+		c.FRACSEC = 0
+		c.SetSyncType(SYNC_TYPE_CMD)
+		c.FRAMESIZE = CommonHeaderLength + 4
+		c.CMD = uint16(CMD_TURN_ON_TX)
+		err := WriteChecksummedFrame(c, p.conn)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -292,11 +308,20 @@ func (p *PMU) unpackUGAChannels(src *DataFrame) ([]*DataFrame, error) {
 		into.FRAMESIZE = 0
 		into.SYNC = from.SYNC
 	}
+	ispacked := func(s string) bool {
+		return strings.HasPrefix(s, "FREQ") ||
+			strings.HasPrefix(s, "VOLT") ||
+			strings.HasPrefix(s, "ANGL")
+	}
+	indexes := make([]map[string]int, len(src.Data))
 	//The first frame contains satellite number
 	rv[0] = &DataFrame{}
 	setcommon(rv[0], src)
-
-	for _, pmu := range src.Data {
+	for pmuidx, pmu := range src.Data {
+		indexes[pmuidx] = make(map[string]int)
+		for i := 0; i < len(pmu.ANALOG_NAMES); i++ {
+			indexes[pmuidx][pmu.ANALOG_NAMES[i]] = i
+		}
 		dt := &PMUData{}
 		rv[0].Data = append(rv[0].Data, dt)
 		//Frame 0 has same timestamp
@@ -314,22 +339,21 @@ func (p *PMU) unpackUGAChannels(src *DataFrame) ([]*DataFrame, error) {
 		dt.PHASOR_MAG = append(dt.PHASOR_MAG, pmu.PHASOR_MAG[0])
 		dt.PHASOR_ISVOLT = append(dt.PHASOR_ISVOLT, pmu.PHASOR_ISVOLT[0])
 
-		//Latitude
-		dt.ANALOG_NAMES = append(dt.ANALOG_NAMES, pmu.ANALOG_NAMES[0])
-		dt.ANALOG = append(dt.ANALOG, pmu.ANALOG[0])
-		//Longitude
-		dt.ANALOG_NAMES = append(dt.ANALOG_NAMES, pmu.ANALOG_NAMES[1])
-		dt.ANALOG = append(dt.ANALOG, pmu.ANALOG[1])
-		//Satellite number
-		dt.ANALOG_NAMES = append(dt.ANALOG_NAMES, pmu.ANALOG_NAMES[2])
-		dt.ANALOG = append(dt.ANALOG, pmu.ANALOG[2])
+		//Include all nonpacked analog fields
+		for idx, name := range pmu.ANALOG_NAMES {
+			if ispacked(name) {
+				continue
+			}
+			dt.ANALOG_NAMES = append(dt.ANALOG_NAMES, name)
+			dt.ANALOG = append(dt.ANALOG, pmu.ANALOG[idx])
+		}
 	}
 	//Now we do the other 11 data frames
 	for other := 0; other < 11; other++ {
 		df := &DataFrame{}
 		rv[1+other] = df
 		setcommon(df, src)
-		for _, pmu := range src.Data {
+		for pmuidx, pmu := range src.Data {
 			dt := &PMUData{}
 			df.Data = append(df.Data, dt)
 			df.FRACSEC = uint32(int(src.FRACSEC) + (other+1)*fracOffset)
@@ -341,9 +365,23 @@ func (p *PMU) unpackUGAChannels(src *DataFrame) ([]*DataFrame, error) {
 			dt.DFREQ = pmu.DFREQ
 			dt.PHASOR_NAMES = append(dt.PHASOR_NAMES, pmu.PHASOR_NAMES[0])
 			dt.PHASOR_ISVOLT = append(dt.PHASOR_ISVOLT, pmu.PHASOR_ISVOLT[0])
-			dt.FREQ = pmu.ANALOG[3+other]
-			dt.PHASOR_MAG = append(dt.PHASOR_MAG, pmu.ANALOG[3+other+11])
-			dt.PHASOR_ANG = append(dt.PHASOR_ANG, pmu.ANALOG[3+other+22])
+			freqidx, ok := indexes[pmuidx][fmt.Sprintf("FREQ%d", other)]
+			if !ok {
+				return nil, fmt.Errorf("missing packed field FREQ%d\n", other)
+			}
+			dt.FREQ = pmu.ANALOG[freqidx]
+
+			voltidx, ok := indexes[pmuidx][fmt.Sprintf("VOLT%d", other)]
+			if !ok {
+				return nil, fmt.Errorf("missing packed field VOLT%d\n", other)
+			}
+			dt.PHASOR_MAG = append(dt.PHASOR_MAG, pmu.ANALOG[voltidx])
+
+			anglidx, ok := indexes[pmuidx][fmt.Sprintf("ANGL%d", other)]
+			if !ok {
+				return nil, fmt.Errorf("missing packed field ANGL%d\n", other)
+			}
+			dt.PHASOR_ANG = append(dt.PHASOR_ANG, pmu.ANALOG[anglidx])
 		}
 	}
 

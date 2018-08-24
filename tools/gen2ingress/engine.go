@@ -1,12 +1,12 @@
-package main
+package gen2ingress
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/BTrDB/smartgridstore/tools"
@@ -16,12 +16,13 @@ import (
 	btrdb "gopkg.in/BTrDB/btrdb.v4"
 )
 
-func main() {
+//This is called by the main method of the driver-specific executable
+func gen2ingress(driver Driver) {
 	if len(os.Args) == 2 && os.Args[1] == "-version" {
 		fmt.Printf("%d.%d.%d\n", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
 		os.Exit(0)
 	}
-	fmt.Printf("Booting c37 ingress version %d.%d.%d\n", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
+	fmt.Printf("Booting gen2 ingress version %d.%d.%d\n", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
 
 	manifest.SetEtcdKeyPrefix("")
 
@@ -58,18 +59,26 @@ func main() {
 
 	ourid := uuid.NewRandom().String()
 	ourctx := context.Background()
+
+	//Do we even need to lock anything in the manifest table
+	if !driver.InitiatesConnections() {
+		for {
+			time.Sleep(5 * time.Second)
+		}
+	}
+
 	//Get the lock table
 devloop:
 	for {
-		const dprefix = "c37-118.pdc."
-		time.Sleep(5 * time.Second)
-		devs, err := manifest.RetrieveMultipleManifestDevices(context.Background(), etcdConn, dprefix)
+		time.Sleep(3 * time.Second)
+		devs, err := manifest.RetrieveMultipleManifestDevices(context.Background(), etcdConn, driver.DIDPrefix())
 		if err != nil {
 			panic(err)
 		}
-		ltable, err := manifest.GetLockTable(context.Background(), etcdConn, dprefix)
-
+		ltable, err := manifest.GetLockTable(context.Background(), etcdConn, driver.DIDPrefix())
 		us, min2, locked := parseLTable(ltable, ourid)
+		//If we already have more than the two minimum nodes, then don't
+		//take on any new nodes
 		if us > min2 && min2 != -1 {
 			//Do not start doing a new device if we are not doing a small number
 			//of devices
@@ -82,30 +91,14 @@ devloop:
 				continue
 			}
 			identifier := d.Descriptor
-			connstring := strings.SplitN(identifier, ".", 3)[2]
-			fmt.Printf("[global] identified pdc %q\n", connstring)
-			//connstring looks like PREFIX@IDCODE@HOST:PORT
-			parts := strings.SplitN(connstring, "@", 3)
-			if len(parts) != 3 {
-				fmt.Printf("Invalid connection string %q\n", connstring)
-				continue
-			}
-			prefix := parts[0]
-			idcode, err := strconv.ParseInt(parts[1], 10, 64)
-			if err != nil {
-				fmt.Printf("Invalid connection string %q\n", connstring)
-				continue
-			}
-			gotlock, err := manifest.ObtainDeviceLock(ourctx, etcdConn, d, ourid, dprefix)
+			gotlock, err := manifest.ObtainDeviceLock(ourctx, etcdConn, d, ourid, driver.DIDPrefix())
 			if err != nil {
 				panic(err)
 			}
 			if gotlock {
 				fmt.Printf("We locked a device and started processing\n")
-				go process(btrdbconn, int(idcode), prefix, parts[2])
+				go driver.HandleDevice(identifier)
 				continue devloop
-			} else {
-				fmt.Printf("we failed to lock\n")
 			}
 		}
 	}
@@ -117,6 +110,7 @@ func parseLTable(t map[string][]string, ourid string) (int, int, map[string]bool
 	us := 0
 	locked := make(map[string]bool)
 	for k, v := range t {
+		//k is a node, v is a list of dids
 		if len(v) <= min || min == -1 {
 			min2 = min
 			min = len(v)
@@ -130,21 +124,32 @@ func parseLTable(t map[string][]string, ourid string) (int, int, map[string]bool
 	}
 	return us, min2, locked
 }
-func process(db *btrdb.BTrDB, idcode int, prefix string, target string) {
-	inserter := NewInserter(db, prefix)
 
-	p := CreatePMU(target, uint16(idcode))
-
+func DialLoop(target string, f ProcessFunction) {
 	for {
-		then := time.Now()
-		dat, drained := p.GetBatch()
-		inserter.ProcessBatch(dat)
-
-		if drained {
-			delta := then.Add(30 * time.Second).Sub(time.Now())
-			if delta > 0 {
-				time.Sleep(delta)
-			}
-		}
+		fmt.Printf("[%s] beginning dial\n", target)
+		err := dial(target, f)
+		fmt.Printf("[%s] fatal error: %v\n", target, err)
+		time.Sleep(10 * time.Second)
+		fmt.Printf("[%s] backoff over, reconnecting\n", target)
 	}
+}
+func dial(target string, f ProcessFunction) (err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = fmt.Errorf("[%s] panic: %v", target, r)
+		}
+	}()
+	addr, err := net.ResolveTCPAddr("tcp", target)
+	if err != nil {
+		return err
+	}
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("[%s] dial succeeded\n", target)
+	br := bufio.NewReader(conn)
+	return f(conn, br)
 }

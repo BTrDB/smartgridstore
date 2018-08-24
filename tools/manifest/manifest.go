@@ -47,8 +47,8 @@ func getEtcdKey(name string) string {
 	return fmt.Sprintf("%s%s%s", etcdprefix, manifestpath, name)
 }
 
-func getEtcdLockKey(name string) string {
-	return fmt.Sprintf("%s%s%s", etcdprefix, manifestlockpath, name)
+func getEtcdLockKey(name string, prefix string) string {
+	return fmt.Sprintf("%s%s%s/%s", etcdprefix, manifestlockpath, prefix, name)
 }
 
 func getNameFromEtcdKey(etcdKey string) string {
@@ -79,8 +79,8 @@ func UpsertManifestDeviceAtomically(ctx context.Context, etcdClient *etcd.Client
 	return etcdstruct.UpsertEtcdStructAtomic(ctx, etcdClient, getEtcdKey(md.Descriptor), md)
 }
 
-func GetLockTable(ctx context.Context, etcdClient *etcd.Client) (map[string][]string, error) {
-	locktableprefix := fmt.Sprintf("%s%s", etcdprefix, manifestlockpath)
+func GetLockTable(ctx context.Context, etcdClient *etcd.Client, prefix string) (map[string][]string, error) {
+	locktableprefix := getEtcdLockKey("", prefix)
 	resp, err := etcdClient.Get(ctx, locktableprefix, etcd.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -92,8 +92,8 @@ func GetLockTable(ctx context.Context, etcdClient *etcd.Client) (map[string][]st
 	}
 	return ltable, nil
 }
-func ObtainDeviceLock(ctx context.Context, etcdClient *etcd.Client, md *ManifestDevice, myid string) (bool, error) {
-	lockkey := getEtcdLockKey(md.Descriptor)
+func ObtainDeviceLock(ctx context.Context, etcdClient *etcd.Client, md *ManifestDevice, myid string, prefix string) (bool, error) {
+	lockkey := getEtcdLockKey(md.Descriptor, prefix)
 	lockval := myid
 	resp, err := etcdClient.Grant(ctx, 5)
 	if err != nil {
