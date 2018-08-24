@@ -176,6 +176,7 @@ func (p *PMU) initialConfigure() {
 			panic(err)
 		}
 	}
+	fmt.Printf("[%s] completed initial configuration commands\n", p.nickname)
 }
 
 func (p *PMU) sendStartCommand() {
