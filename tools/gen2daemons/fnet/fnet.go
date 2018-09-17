@@ -29,7 +29,7 @@ func (fn *FNETAscii) SetConn(in *gen2ingress.Inserter) {
 
 func (fn *FNETAscii) HandleDevice(descriptor string) {
 	//Format: fnet.ascii.client/collection/prefix@ip:port
-
+Note this wont work for multiple devices. fn cannot have state as a multi-device driver
 	suffix := strings.TrimPrefix(descriptor, fn.DIDPrefix())
 	parts := strings.Split(suffix, "@")
 	//Remove starting slash

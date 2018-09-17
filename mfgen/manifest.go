@@ -21,6 +21,7 @@ var Manifest []*ManifestEntry = []*ManifestEntry{
 	&ManifestEntry{Yep, "btrdb.statefulset.yaml", TemplateProcess("btrdb.statefulset.yaml", "core")},
 	&ManifestEntry{Yep, "create_admin_key.sh", TemplateProcess("create_admin_key.sh", "core")},
 	&ManifestEntry{Yep, "c37ingress.deployment.yaml", TemplateProcess("c37ingress.deployment.yaml", "ingress")},
+	&ManifestEntry{Yep, "gepingress.deployment.yaml", TemplateProcess("gepingress.deployment.yaml", "ingress")},
 	&ManifestEntry{Yep, "ingester.deployment.yaml", TemplateProcess("ingester.deployment.yaml", "ingress")},
 	&ManifestEntry{Yep, "receiver.deployment.yaml", TemplateProcess("receiver.deployment.yaml", "ingress")},
 	&ManifestEntry{Yep, "etcd-cluster.daemonset.yaml", TemplateProcess("etcd-cluster.daemonset.yaml", "core")},
