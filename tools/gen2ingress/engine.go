@@ -17,7 +17,7 @@ import (
 )
 
 //This is called by the main method of the driver-specific executable
-func gen2ingress(driver Driver) {
+func Gen2Ingress(driver Driver) {
 	if len(os.Args) == 2 && os.Args[1] == "-version" {
 		fmt.Printf("%d.%d.%d\n", tools.VersionMajor, tools.VersionMinor, tools.VersionPatch)
 		os.Exit(0)
@@ -58,7 +58,9 @@ func gen2ingress(driver Driver) {
 	log.Println("Connected")
 
 	ourid := uuid.NewRandom().String()
-	ourctx := context.Background()
+
+	insert := NewInserter(btrdbconn)
+	driver.SetConn(insert)
 
 	//Do we even need to lock anything in the manifest table
 	if !driver.InitiatesConnections() {
@@ -66,6 +68,8 @@ func gen2ingress(driver Driver) {
 			time.Sleep(5 * time.Second)
 		}
 	}
+
+	ourActiveDevices := make(map[string]context.CancelFunc)
 
 	//Get the lock table
 devloop:
@@ -75,6 +79,24 @@ devloop:
 		if err != nil {
 			panic(err)
 		}
+		copyActiveDevices := make(map[string]context.CancelFunc)
+		for k, v := range ourActiveDevices {
+			copyActiveDevices[k] = v
+		}
+		for _, d := range devs {
+			delete(copyActiveDevices, d.Descriptor)
+		}
+
+		//Any entries left in the copy are devices that have been removed from the
+		//descriptor table
+		for id, cancel := range copyActiveDevices {
+			shortform := manifest.GetDescriptorShortForm(id)
+			fmt.Printf("[%s] Device was removed from manifest. Stopping processing\n", shortform)
+			cancel()
+			delete(ourActiveDevices, id)
+		}
+
+		//Check which of the devices are locked
 		ltable, err := manifest.GetLockTable(context.Background(), etcdConn, driver.DIDPrefix())
 		us, min2, locked := parseLTable(ltable, ourid)
 		//If we already have more than the two minimum nodes, then don't
@@ -91,14 +113,22 @@ devloop:
 				continue
 			}
 			identifier := d.Descriptor
-			gotlock, err := manifest.ObtainDeviceLock(ourctx, etcdConn, d, ourid, driver.DIDPrefix())
+			ctx, cancel := context.WithCancel(context.Background())
+			gotlock, err := manifest.ObtainDeviceLock(ctx, etcdConn, d, ourid, driver.DIDPrefix())
 			if err != nil {
 				panic(err)
 			}
 			if gotlock {
-				fmt.Printf("We locked a device and started processing\n")
-				go driver.HandleDevice(identifier)
+				shortform := manifest.GetDescriptorShortForm(identifier)
+				fmt.Printf("[%s] We locked device and are started processing\n", shortform)
+				ourActiveDevices[identifier] = cancel
+				err := driver.HandleDevice(ctx, identifier)
+				if err != nil {
+					fmt.Printf("[%s] device configuration error: %v\n", shortform, err)
+				}
 				continue devloop
+			} else {
+				cancel()
 			}
 		}
 	}
@@ -125,31 +155,72 @@ func parseLTable(t map[string][]string, ourid string) (int, int, map[string]bool
 	return us, min2, locked
 }
 
-func DialLoop(target string, f ProcessFunction) {
+func DialLoop(ctx context.Context, target string, descriptor string, f DialProcessFunction) {
+	shortform := manifest.GetDescriptorShortForm(descriptor)
 	for {
-		fmt.Printf("[%s] beginning dial\n", target)
-		err := dial(target, f)
-		fmt.Printf("[%s] fatal error: %v\n", target, err)
+		if ctx.Err() != nil {
+			fmt.Printf("[%s] context cancelled\n", shortform)
+			return
+		}
+		fmt.Printf("[%s] beginning dial of %s\n", shortform, target)
+		sctx, cancel := context.WithCancel(ctx)
+		err := dial(sctx, descriptor, target, f)
+		cancel()
+		fmt.Printf("[%s] fatal error: %v\n", shortform, err)
+		if ctx.Err() != nil {
+			return
+		}
 		time.Sleep(10 * time.Second)
-		fmt.Printf("[%s] backoff over, reconnecting\n", target)
+		fmt.Printf("[%s] backoff over, reconnecting\n", shortform)
 	}
 }
-func dial(target string, f ProcessFunction) (err error) {
+func Loop(ctx context.Context, descriptor string, f CustomProcessFunction) {
+	shortform := manifest.GetDescriptorShortForm(descriptor)
+	for {
+		if ctx.Err() != nil {
+			fmt.Printf("[%s] context cancelled\n", shortform)
+			return
+		}
+		fmt.Printf("[%s] beginning connect\n", shortform)
+		sctx, cancel := context.WithCancel(ctx)
+		err := custom(sctx, descriptor, f)
+		cancel()
+		fmt.Printf("[%s] fatal error: %v\n", shortform, err)
+		time.Sleep(10 * time.Second)
+		fmt.Printf("[%s] backoff over, reconnecting\n", shortform)
+	}
+}
+func custom(ctx context.Context, descriptor string, f CustomProcessFunction) (err error) {
+	shortform := manifest.GetDescriptorShortForm(descriptor)
+	//TODO set back
+	// defer func() {
+	// 	r := recover()
+	// 	if r != nil {
+	// 		err = fmt.Errorf("[%s] panic: %v", shortform, r)
+	// 	}
+	// }()
+	_ = shortform
+	return f(ctx)
+}
+func dial(ctx context.Context, descriptor string, target string, f DialProcessFunction) (err error) {
+	shortform := manifest.GetDescriptorShortForm(descriptor)
+	var conn *net.TCPConn
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = fmt.Errorf("[%s] panic: %v", target, r)
+			conn.Close()
+			err = fmt.Errorf("[%s] panic: %v", shortform, r)
 		}
 	}()
 	addr, err := net.ResolveTCPAddr("tcp", target)
 	if err != nil {
 		return err
 	}
-	conn, err := net.DialTCP("tcp", nil, addr)
+	conn, err = net.DialTCP("tcp", nil, addr)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[%s] dial succeeded\n", target)
+	fmt.Printf("[%s] dial succeeded\n", shortform)
 	br := bufio.NewReader(conn)
-	return f(conn, br)
+	return f(ctx, conn, br)
 }

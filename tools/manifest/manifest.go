@@ -2,11 +2,13 @@ package manifest
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
 	"github.com/samkumar/etcdstruct"
 	"github.com/ugorji/go/codec"
+	"golang.org/x/crypto/sha3"
 
 	etcd "github.com/coreos/etcd/clientv3"
 )
@@ -79,6 +81,12 @@ func UpsertManifestDeviceAtomically(ctx context.Context, etcdClient *etcd.Client
 	return etcdstruct.UpsertEtcdStructAtomic(ctx, etcdClient, getEtcdKey(md.Descriptor), md)
 }
 
+func GetDescriptorShortForm(descriptor string) string {
+	hash := sha3.Sum256([]byte(descriptor))
+	b64 := base64.URLEncoding.EncodeToString(hash[:])
+	return b64[:10]
+}
+
 func GetLockTable(ctx context.Context, etcdClient *etcd.Client, prefix string) (map[string][]string, error) {
 	locktableprefix := getEtcdLockKey("", prefix)
 	resp, err := etcdClient.Get(ctx, locktableprefix, etcd.WithPrefix())
@@ -118,7 +126,6 @@ func ObtainDeviceLock(ctx context.Context, etcdClient *etcd.Client, md *Manifest
 		for _ = range ch {
 
 		}
-		panic("ETCD lease ended unexpectedly, restarting")
 	}()
 	return true, nil
 }

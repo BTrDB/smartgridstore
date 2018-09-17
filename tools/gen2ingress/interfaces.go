@@ -2,39 +2,28 @@ package gen2ingress
 
 import (
 	"bufio"
+	"context"
 	"net"
 
 	"gopkg.in/BTrDB/btrdb.v4"
 )
 
-type InsertRecord interface {
-	Data() []btrdb.RawPoint
-	Name() string
-	Collection() string
-	Unit() string
+type InsertRecord struct {
+	Data []btrdb.RawPoint
+	//TODO this is not used
+	Flags             []uint64
+	Name              string
+	Collection        string
+	Unit              string
+	AnnotationChanges map[string]string
 }
 
-type StructInsertRecord struct {
-	FData       []btrdb.RawPoint
-	FName       string
-	FCollection string
-	FUnit       string
+func (ir *InsertRecord) Size() int {
+	return len(ir.Data)*16 + 100
 }
 
-func (s *StructInsertRecord) Data() []btrdb.RawPoint {
-	return s.FData
-}
-func (s *StructInsertRecord) Name() string {
-	return s.FName
-}
-func (s *StructInsertRecord) Collection() string {
-	return s.FCollection
-}
-func (s *StructInsertRecord) Unit() string {
-	return s.FUnit
-}
-
-type ProcessFunction func(conn *net.TCPConn, r *bufio.Reader) error
+type DialProcessFunction func(ctx context.Context, conn *net.TCPConn, r *bufio.Reader) error
+type CustomProcessFunction func(ctx context.Context) error
 
 type Driver interface {
 	//Which devices should this driver be assigned to
@@ -48,5 +37,5 @@ type Driver interface {
 	SetConn(in *Inserter)
 	//For devices that are connected TO, descriptors will be handed to the driver
 	//from the manifest table
-	HandleDevice(descriptor string)
+	HandleDevice(ctx context.Context, descriptor string) error
 }
