@@ -4,7 +4,14 @@ echo "determining version"
 
 set -ex
 
-PFX=""
+PFX="dev-"
+
+if [ ! -d "../containers/gepingress/thirdparty" ]
+then
+  echo "you need to build the GEP libraries using containers/gep_lib_build"
+  echo "and copy them to containers/gepingress/thirdparty"
+  exit 1
+fi
 
 pushd $GOPATH/src/github.com/BTrDB/btrdb-server
 dep ensure
@@ -87,6 +94,16 @@ then
 fi
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/gepingress
+go build
+gepingress_ver=`LD_LIBRARY_PATH=thirdparty/Libraries/boost ./gepingress -version`
+if [[ "$gepingress_ver" != "$target_ver" ]]
+then
+  echo "GEP ingress version mismatch - got $gepingress_ver"
+  exit 1
+fi
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/tools/certproxy
 go build
 certproxy_ver=`./certproxy -version`
@@ -152,6 +169,11 @@ cp ../../tools/c37ingress/c37ingress .
 docker build -t btrdb/${PFX}c37ingress:$target_ver .
 popd
 
+pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/gepingress
+cp ../../tools/gepingress/gepingress .
+docker build -t btrdb/${PFX}gepingress:$target_ver .
+popd
+
 pushd $GOPATH/src/github.com/BTrDB/smartgridstore/containers/certproxy
 cp ../../tools/certproxy/certproxy .
 docker build -t btrdb/${PFX}certproxy:$target_ver .
@@ -179,6 +201,7 @@ docker push btrdb/${PFX}console:$target_ver
 docker push btrdb/${PFX}ingester:$target_ver
 docker push btrdb/${PFX}apifrontend:$target_ver
 docker push btrdb/${PFX}c37ingress:$target_ver
+docker push btrdb/${PFX}gepingress:$target_ver
 docker push btrdb/${PFX}certproxy:$target_ver
 docker push btrdb/${PFX}receiver:$target_ver
 docker push btrdb/${PFX}pmu2btrdb:$target_ver

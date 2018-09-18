@@ -137,6 +137,7 @@ func (d *GEPDevice) begin(ctx context.Context) error {
 	d.chMetadata = make(chan []byte, 10)
 	d.chMessage = make(chan msg, 100)
 	d.chFailed = make(chan bool, 10)
+	d.metachanged = make(map[string]time.Time)
 
 	//Refresh the device metadata periodically
 	go d.periodicallAskForMetadata(ctx)
@@ -268,6 +269,7 @@ func (d *GEPDevice) processMeasurement(m *Measurement) error {
 			attributes["phase"] = md.PhasorDetail.CPhase
 			attributes["type"] = md.PhasorDetail.CType
 		}
+		d.metachanged[m.SignalID] = t
 	}
 	dacro := md.CDeviceAcronym
 	if dacro == "" {

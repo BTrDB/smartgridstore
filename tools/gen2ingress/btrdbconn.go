@@ -53,7 +53,7 @@ func NewInserter(db *btrdb.BTrDB) *Inserter {
 		coalesceInterval: 2 * time.Second,
 		maxSize:          int64(wql),
 	}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 4; i++ {
 		go rv.worker()
 	}
 	go func() {
