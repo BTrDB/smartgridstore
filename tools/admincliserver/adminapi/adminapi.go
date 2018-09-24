@@ -61,7 +61,7 @@ func ServeGRPC(ec *etcd.Client, laddr string) {
 	fmt.Printf("secure/insecure api running\n")
 }
 
-func ServeHTTP(ec *etcd.Client, laddr string, svcaddr string) {
+func ServeHTTP(ec *etcd.Client, laddr string) {
 	cfg, err := certutils.GetAPIConfig(ec)
 	if err != nil {
 		fmt.Printf("COULD NOT OBTAIN TLS CERTIFICATE\n")

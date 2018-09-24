@@ -108,7 +108,7 @@ func main() {
 
 	config.AddHostKey(private)
 	adminapi.ServeGRPC(etcdClient, "0.0.0.0:2223")
-	adminapi.ServeHTTP(etcdClient, "0.0.0.0:2224", "cm7.cal-sdb.org:2223")
+	adminapi.ServeHTTP(etcdClient, "0.0.0.0:2224")
 
 	listener, err := net.Listen("tcp", "0.0.0.0:2222")
 	if err != nil {

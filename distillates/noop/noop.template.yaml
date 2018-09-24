@@ -1,0 +1,23 @@
+# {{ .GenLine }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: noop
+  namespace: {{.TargetNamespace}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: noop
+  template:
+    metadata:
+      labels:
+        app: noop
+    spec:
+      containers:
+      - name: main
+        image: btrdb/{{.Pfx}}distil-noop:{{.TargetVersion}}
+        imagePullPolicy: {{.Containers.ImagePullPolicy}}
+        env:
+          - name: BTRDB_ENDPOINTS
+            value: btrdb-bootstrap:4410

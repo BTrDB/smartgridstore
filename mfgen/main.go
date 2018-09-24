@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -48,6 +50,13 @@ func main() {
 				},
 			},
 		},
+		{
+			Name:      "custom",
+			Usage:     "generate a manifest from a custom template",
+			Action:    cli.ActionFunc(genCustom),
+			ArgsUsage: "<siteconfig> <template> <outfile>",
+			Flags:     []cli.Flag{},
+		},
 	}
 	app.Run(os.Args)
 }
@@ -60,6 +69,40 @@ func genSiteConfig(c *cli.Context) error {
 	}
 	f.WriteString(DefaultSiteConfig)
 	f.Close()
+	return nil
+}
+
+func genCustom(c *cli.Context) error {
+	if len(c.Args()) != 3 {
+		fmt.Printf("usage: mfgen custom <siteconfig> <template> <outfile>")
+		os.Exit(1)
+	}
+	sc, err := LoadSiteConfig(c.Args()[0])
+	if err != nil {
+		fmt.Printf("could not load site config: %v\n", err)
+		os.Exit(1)
+	}
+	tsrc, err := ioutil.ReadFile(c.Args()[1])
+	if err != nil {
+		fmt.Printf("could not load template: %v\n", err)
+		os.Exit(1)
+	}
+	of, err := os.Create(c.Args()[2])
+	if err != nil {
+		fmt.Printf("could not create output file: %v\n", err)
+		os.Exit(1)
+	}
+	templ, err := template.New("root").Parse(string(tsrc))
+	if err != nil {
+		fmt.Printf("error: template malformed: %v\n", err)
+		os.Exit(1)
+	}
+	err = templ.Execute(of, sc)
+	if err != nil {
+		fmt.Printf("error: template error: %v\n", err)
+		os.Exit(1)
+	}
+	of.Close()
 	return nil
 }
 
