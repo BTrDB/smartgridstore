@@ -21,3 +21,9 @@ spec:
         env:
           - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410
+          - name: INPUT_PATH
+            value: #fill this in
+          - name: OUTPUT_PATH
+            value: #fill this in
+          - name: DISTILLATE_ID
+            value: #fill this in
