@@ -172,7 +172,7 @@ func (ins *Inserter) worker() {
 			total += len(dat)
 			err := stream.Insert(context.Background(), dat)
 			if err != nil {
-				fmt.Printf("Got insert error (ignoring): %v\n", err)
+				fmt.Printf("Stream uuid=%s col=%s name=%s insert error (ignoring): %v\n", stream.UUID().String(), sk.Collection, sk.Name, err)
 			}
 		}
 		now := time.Now()
