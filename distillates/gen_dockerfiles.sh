@@ -33,7 +33,7 @@ do
   popd
 
   pushd generated_container_${alg}
-  echo -e "FROM ubuntu:bionic\nADD ${alg} /\nENTRYPOINT ["./${alg}"]" > Dockerfile
+  echo -e "FROM ubuntu:bionic\nADD ${alg} /\nENTRYPOINT [\"./${alg}\"]" > Dockerfile
   echo -e "#!/bin/bash\ndocker build -t btrdb/dev-distil-${alg}:${version} ." > rebuild.sh
   echo -e "docker push btrdb/dev-distil-${alg}:${version}" >> rebuild.sh
   echo -e "#!/bin/bash\ndocker build -t btrdb/distil-${alg}:${version} ." > prod-rebuild.sh

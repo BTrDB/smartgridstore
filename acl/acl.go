@@ -213,6 +213,7 @@ func (e *ACLEngine) RemovePrefixFromGroup(group string, prefix string) error {
 		}
 		newprefixes = append(newprefixes, pfx)
 	}
+	g.Prefixes = newprefixes
 	return e.setstruct(fmt.Sprintf("auth/groups/%s", group), g)
 }
 
@@ -495,19 +496,26 @@ func (e *ACLEngine) GetBuiltinUser(name string) (*User, error) {
 	rv := &User{
 		Username: name,
 		Password: bu.Password,
-		Groups:   bu.Groups,
 	}
 	haspublic := false
-	for _, grp := range rv.Groups {
+	for _, grp := range bu.Groups {
 		if grp == "public" {
 			haspublic = true
 		}
+		g, err := e.GetGroup(grp)
+		if err != nil {
+			return nil, err
+		}
+		if g == nil {
+			//This group got deleted
+			continue
+		}
+		rv.Groups = append(rv.Groups, grp)
+		rv.FullGroups = append(rv.FullGroups, *g)
 	}
 	if !haspublic {
 		rv.Groups = append(rv.Groups, "public")
-	}
-	for _, gs := range rv.Groups {
-		g, err := e.GetGroup(gs)
+		g, err := e.GetGroup("public")
 		if err != nil {
 			return nil, err
 		}
