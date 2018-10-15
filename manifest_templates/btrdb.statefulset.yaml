@@ -55,6 +55,8 @@ spec:
             value: "NO"
           - name: BTRDB_ENABLE_OBLITERATE
             value: "YES"
+          - name: CEPH_CONFIG
+            value: {{.SiteInfo.Ceph.ConfigFile}}
           - name: MY_POD_NAME
             valueFrom:
               fieldRef:
@@ -63,20 +65,35 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+{{ if .SiteInfo.Ceph.MountConfig }}
+        volumeMounts:
+        - name: ceph-config
+          mountPath: {{.SiteInfo.Ceph.ConfigPath}}
+          readOnly: true
+{{ else }}
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/
             readOnly: true
+{{ end }}
         ports:
         - containerPort: 4410
           protocol: TCP
         - containerPort: 9000
           protocol: TCP
       terminationGracePeriodSeconds: 600
+{{ if .SiteInfo.Ceph.MountConfig }}
+      volumes:
+      - name: ceph-config
+        hostPath:
+          path: {{.SiteInfo.Ceph.ConfigPath}}
+          type: Directory
+{{ else }}
       volumes:
         - name: ceph-keyring
           secret:
             secretName: ceph-keyring
+{{ end }}
 ---
 apiVersion: v1
 kind: Service

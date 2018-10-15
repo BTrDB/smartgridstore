@@ -58,7 +58,7 @@ siteInfo:
     btrdbJournalPool: btrdb_journal
     # If you are using Rook, the recommended way to connect to ceph
     # is to mount the config file directly. Uncomment this to do so
-    # configFile: /var/rook/rook-ceph/rook-ceph.config
+    # configFile: /var/lib/rook/rook-ceph/rook-ceph.config
     # mountConfig: true
 
   etcd:
