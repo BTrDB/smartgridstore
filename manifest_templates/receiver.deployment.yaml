@@ -31,18 +31,35 @@ spec:
             value: {{.SiteInfo.Ceph.StagingPool}}
           - name: RECEIVER_GENERATION
             value: "10"
+          - name: CEPH_CONFIG
+            value: {{.SiteInfo.Ceph.ConfigFile}}
+{{ if .SiteInfo.Ceph.MountConfig }}
+        volumeMounts:
+        - name: ceph-config
+          mountPath: {{.SiteInfo.Ceph.ConfigPath}}
+          readOnly: true
+{{ else }}
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/
             readOnly: true
+{{ end }}
         ports:
         - containerPort: 1883
           protocol: TCP
           name: receiver-legacy
+{{ if .SiteInfo.Ceph.MountConfig }}
+      volumes:
+      - name: ceph-config
+        hostPath:
+          path: {{.SiteInfo.Ceph.ConfigPath}}
+          type: Directory
+{{ else }}
       volumes:
         - name: ceph-keyring
           secret:
             secretName: ceph-keyring
+{{ end }}
 ---
 apiVersion: v1
 kind: Service

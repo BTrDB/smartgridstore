@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/BTrDB/btrdb-server/bte"
-	"github.com/ceph/go-ceph/rados"
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/BTrDB/smartgridstore/tools"
 	"github.com/BTrDB/smartgridstore/tools/manifest"
 	"github.com/BTrDB/smartgridstore/tools/upmuparser"
+	"github.com/ceph/go-ceph/rados"
+	etcd "github.com/coreos/etcd/clientv3"
 	"gopkg.in/BTrDB/btrdb.v4"
 
 	uuid "github.com/pborman/uuid"
@@ -83,10 +83,14 @@ func main() {
 		fmt.Printf("Could not initialize ceph storage: %v\n", err)
 		return
 	}
-	err = conn.ReadDefaultConfigFile()
+	cfgfile := os.Getenv("CEPH_CONFIG")
+	if cfgfile == "" {
+		cfgfile = "/etc/ceph/ceph.conf"
+	}
+	err = conn.ReadConfigFile(cfgfile)
 	if err != nil {
-		fmt.Printf("Could not read ceph config: %v\n", err)
-		return
+		fmt.Printf("could not read ceph config file: %q: %v\n", cfgfile, err)
+		os.Exit(1)
 	}
 	err = conn.Connect()
 	if err != nil {

@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "7b174c7f06824eb5f1af3f30179925154638f0a5"
+  revision = "28e3df6c5766a3ceda98b23412479dcdd35c0784"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "df6c46f5711ed7093f04ca963b559e859db9aa11"
+  revision = "68ef900b66a241b8190c9d21db169f5d95f9fbec"
 
 [[projects]]
   branch = "master"
@@ -47,27 +47,13 @@
   branch = "master"
   name = "github.com/ceph/go-ceph"
   packages = ["rados"]
-  revision = "b2d948844f193f694ddac05f1fd325e91dd2926c"
+  revision = "e1762cd8b39ead9ee72333f08ebced60bdc0d4b5"
 
 [[projects]]
   branch = "master"
   name = "github.com/coreos/etcd"
-  packages = [
-    "auth/authpb",
-    "clientv3",
-    "clientv3/balancer",
-    "clientv3/balancer/picker",
-    "clientv3/balancer/resolver/endpoint",
-    "etcdserver/api/v3rpc/rpctypes",
-    "etcdserver/etcdserverpb",
-    "mvcc/mvccpb",
-    "pkg/logutil",
-    "pkg/systemd",
-    "pkg/types",
-    "raft",
-    "raft/raftpb"
-  ]
-  revision = "2921ab670fa646c2cbb3ba53b5c5bc11ea47632f"
+  packages = ["clientv3"]
+  revision = "7a759c18d294698f537f8be91927354818a71e51"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
@@ -125,6 +111,12 @@
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
 
 [[projects]]
+  name = "github.com/google/uuid"
+  packages = ["."]
+  revision = "d460ce9f8df2e77fb1ba55ca87fafed96c607494"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
   packages = [
     ".",
@@ -142,8 +134,8 @@
     "runtime/internal",
     "utilities"
   ]
-  revision = "92583770e3f01b09a0d3e9bdf64321d8bebd48f2"
-  version = "v1.4.1"
+  revision = "aeab1d96e0f1368d243e2e5f526aa29d495517bb"
+  version = "v1.5.1"
 
 [[projects]]
   branch = "master"
@@ -190,8 +182,8 @@
 [[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -229,8 +221,8 @@
 [[projects]]
   name = "github.com/pborman/uuid"
   packages = ["."]
-  revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
-  version = "v1.1"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
   name = "github.com/philhofer/fwd"
@@ -240,9 +232,12 @@
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
-  packages = ["prometheus"]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
+  packages = [
+    "prometheus",
+    "prometheus/internal"
+  ]
+  revision = "1cafe34db7fdec6022e17e00e1c1ea501022f3e4"
+  version = "v0.9.0"
 
 [[projects]]
   branch = "master"
@@ -258,7 +253,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "c7de2306084e37d54b8be01f3541a8464345e9a5"
+  revision = "bcb74de08d37a417cb6789eec1d6c810040f0470"
 
 [[projects]]
   branch = "master"
@@ -269,7 +264,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "05ee40e3a273f7245e8777337fc7b46e533a9a92"
+  revision = "185b4288413d2a0dd0806f78c90dde719829e5ae"
 
 [[projects]]
   branch = "master"
@@ -300,6 +295,25 @@
   name = "github.com/zhangxinngang/murmur"
   packages = ["."]
   revision = "4e88ee1a5950de76f286f8375b1c4171438fe7c3"
+
+[[projects]]
+  branch = "master"
+  name = "go.etcd.io/etcd"
+  packages = [
+    "auth/authpb",
+    "clientv3/balancer",
+    "clientv3/balancer/picker",
+    "clientv3/balancer/resolver/endpoint",
+    "etcdserver/api/v3rpc/rpctypes",
+    "etcdserver/etcdserverpb",
+    "mvcc/mvccpb",
+    "pkg/logutil",
+    "pkg/systemd",
+    "pkg/types",
+    "raft",
+    "raft/raftpb"
+  ]
+  revision = "7a759c18d294698f537f8be91927354818a71e51"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -345,7 +359,7 @@
     "ssh",
     "ssh/terminal"
   ]
-  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+  revision = "0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb"
 
 [[projects]]
   branch = "master"
@@ -359,7 +373,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "922f4815f713f213882e8ef45e0d315b164d705c"
+  revision = "49bb7cea24b1df9410e1712aa6433dae904ff66a"
 
 [[projects]]
   branch = "master"
@@ -368,7 +382,7 @@
     "unix",
     "windows"
   ]
-  revision = "3b58ed4ad3395d483fc92d5d14123ce2c3581fec"
+  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -398,7 +412,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "c66870c02cf823ceb633bcd05be3c7cda29976f4"
+  revision = "af9cb2a35e7f169ec875002c1829c9b315cddc04"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -431,8 +445,8 @@
     "status",
     "tap"
   ]
-  revision = "32fb0ac620c32ba40a4626ddf94d90d12cce3455"
-  version = "v1.14.0"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [[projects]]
   branch = "v4"
@@ -465,6 +479,12 @@
   version = "v2.0.6"
 
 [[projects]]
+  branch = "v4.0"
+  name = "gopkg.in/distil.v4"
+  packages = ["."]
+  revision = "12dc7924c32b503a978694ff8d865200a4e75531"
+
+[[projects]]
   name = "gopkg.in/fatih/color.v1"
   packages = ["."]
   revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
@@ -484,8 +504,8 @@
 [[projects]]
   name = "gopkg.in/ini.v1"
   packages = ["."]
-  revision = "358ee7663966325963d4e8b2e1fbd570c5195153"
-  version = "v1.38.1"
+  revision = "9c8236e659b76e87bf02044d06fde8683008ff3e"
+  version = "v1.39.0"
 
 [[projects]]
   name = "gopkg.in/mattn/go-colorable.v0"
@@ -496,8 +516,8 @@
 [[projects]]
   name = "gopkg.in/mattn/go-isatty.v0"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   name = "gopkg.in/mattn/go-runewidth.v0"
@@ -529,6 +549,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "809e192fea5f7b8062fb62a3303516ce42887256e3aaa1c21520aa06e9f00193"
+  inputs-digest = "bda4028bbbfca06886d7f53e3c907b3d89f250a4c1eaf495b228cbcbda8945c6"
   solver-name = "gps-cdcl"
   solver-version = 1

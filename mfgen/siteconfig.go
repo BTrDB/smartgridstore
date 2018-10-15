@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"path"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -19,7 +20,9 @@ type SiteConfig struct {
 			BTrDBDataPool    string `yaml:"btrdbDataPool"`
 			BTrDBHotPool     string `yaml:"btrdbHotPool"`
 			BTrDBJournalPool string `yaml:"btrdbJournalPool"`
-			RBDPool          string `yaml:"rbdPool"`
+			MountConfig      bool   `yaml:"mountConfig"`
+			ConfigFile       string `yaml:"configFile"`
+			ConfigPath       string `yaml:"-"`
 		} `yaml:"ceph"`
 		Etcd struct {
 			Nodes   []string `yaml:"nodes"`
@@ -53,9 +56,10 @@ siteInfo:
     # load into better-performing batches. It should be backed by
     # a very high performance pool
     btrdbJournalPool: btrdb_journal
-    # the RBD pool is used to provision persistent storage for
-    # kubernetes pods. It can use spinning metal.
-    rbdPool: rbd
+    # If you are using Rook, the recommended way to connect to ceph
+    # is to mount the config file directly. Uncomment this to do so
+    # configFile: /var/rook/rook-ceph/rook-ceph.config
+    # mountConfig: true
 
   etcd:
     # which nodes should run etcd servers. There must be three entries
@@ -88,6 +92,14 @@ func LoadSiteConfigArray(arr []byte) (*SiteConfig, error) {
 	if er != nil {
 		return nil, er
 	}
+	//Some special cases
+	if rv.SiteInfo.Ceph.ConfigFile == "" {
+		rv.SiteInfo.Ceph.ConfigFile = "/etc/ceph/ceph.conf"
+	}
+	if rv.SiteInfo.Ceph.MountConfig {
+		rv.SiteInfo.Ceph.ConfigPath = path.Dir(rv.SiteInfo.Ceph.ConfigFile)
+	}
+
 	return &rv, nil
 }
 

@@ -24,10 +24,23 @@ spec:
             value: {{.SiteInfo.Ceph.BTrDBHotPool}}
           - name: CEPH_DATA_POOL
             value: {{.SiteInfo.Ceph.BTrDBDataPool}}
+          - name: CEPH_CONFIG
+            value: {{.SiteInfo.Ceph.ConfigFile}}
           - name: MY_POD_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+{{ if .SiteInfo.Ceph.MountConfig }}
+        volumeMounts:
+        - name: ceph-config
+          mountPath: {{.SiteInfo.Ceph.ConfigPath}}
+          readOnly: true
+      volumes:
+      - name: ceph-config
+        hostPath:
+          path: {{.SiteInfo.Ceph.ConfigPath}}
+          type: Directory
+{{ else }}
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/
@@ -36,3 +49,4 @@ spec:
         - name: ceph-keyring
           secret:
             secretName: ceph-keyring
+{{ end }}

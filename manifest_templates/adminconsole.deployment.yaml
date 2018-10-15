@@ -20,6 +20,17 @@ spec:
             value: http://etcd:2379
           - name: BTRDB_ENDPOINTS
             value: btrdb-bootstrap:4410
+          - name: CEPH_CONFIG
+            value: {{.SiteInfo.Ceph.ConfigFile}}
+{{ if .SiteInfo.Ceph.MountConfig }}
+        volumeMounts:
+        - name: ceph-config
+          mountPath: {{.SiteInfo.Ceph.ConfigPath}}
+          readOnly: true
+        - name: admin-host-key
+          mountPath: /etc/adminserver/
+          readOnly: true
+{{ else }}
         volumeMounts:
           - name: ceph-keyring
             mountPath: /etc/ceph/
@@ -27,6 +38,7 @@ spec:
           - name: admin-host-key
             mountPath: /etc/adminserver/
             readOnly: true
+{{ end }}
         ports:
           - containerPort: 2222
             protocol: TCP
@@ -37,6 +49,16 @@ spec:
           - containerPort: 2224
             name: admin-http-api
             protocol: TCP
+{{ if .SiteInfo.Ceph.MountConfig }}
+      volumes:
+      - name: ceph-config
+        hostPath:
+          path: {{.SiteInfo.Ceph.ConfigPath}}
+          type: Directory
+      - name: admin-host-key
+        secret:
+          secretName: admin-host-key
+{{ else }}
       volumes:
         - name: ceph-keyring
           secret:
@@ -44,6 +66,7 @@ spec:
         - name: admin-host-key
           secret:
             secretName: admin-host-key
+{{ end }}
 ---
 apiVersion: v1
 kind: Service
