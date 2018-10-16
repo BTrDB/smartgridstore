@@ -4,7 +4,7 @@ echo "determining version"
 
 set -ex
 
-PFX="dev-"
+PFX=""
 
 if [ ! -d "../containers/gepingress/thirdparty" ]
 then

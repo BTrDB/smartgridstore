@@ -343,8 +343,8 @@ func (u *User) HasCapabilityOnPrefix(c string, pfx string) bool {
 		for _, gpfx := range grp.Prefixes {
 			if strings.HasPrefix(pfx, gpfx) {
 				found = true
+				break
 			}
-			break
 		}
 		if !found {
 			continue
