@@ -109,7 +109,6 @@ func (ins *Inserter) worker() {
 		for sk, dat := range buf {
 			ins.cachemu.Lock()
 			stream, ok := ins.streamcache[sk]
-			ins.cachemu.Unlock()
 			if !ok {
 				sz, err := ins.db.LookupStreams(context.Background(), sk.Collection,
 					false, btrdb.OptKV("name", sk.Name), nil)
@@ -125,16 +124,14 @@ func (ins *Inserter) worker() {
 						panic(err)
 					}
 					stream = st
-					ins.cachemu.Lock()
 					ins.streamcache[sk] = stream
-					ins.cachemu.Unlock()
 				} else {
 					stream = sz[0]
-					ins.cachemu.Lock()
 					ins.streamcache[sk] = stream
-					ins.cachemu.Unlock()
 				}
 			}
+			ins.cachemu.Unlock()
+
 			ann, ok := anns[sk]
 			if ok {
 				_, aver, err := stream.Annotations(context.Background())
