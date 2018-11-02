@@ -135,30 +135,25 @@ func main() {
 	}
 	starttime := starttimet.UnixNano()
 	endtime := endtimet.UnixNano()
-	from, err := v4.Connect(context.Background(), cfg.FromServer)
+	var from, to *v4.BTrDB
+	if os.Getenv("FROM_API_KEY") != "" {
+		from, err = v4.ConnectAuth(context.Background(), os.Getenv("FROM_API_KEY"), cfg.FromServer)
+	} else {
+		from, err = v4.Connect(context.Background(), cfg.FromServer)
+	}
 	if err != nil {
 		fmt.Printf("Could not connect to FromServer: %v\n", err)
 		os.Exit(1)
 	}
-	to, err := v4.Connect(context.Background(), cfg.ToServer)
+	if os.Getenv("TO_API_KEY") != "" {
+		to, err = v4.ConnectAuth(context.Background(), os.Getenv("TO_API_KEY"), cfg.ToServer)
+	} else {
+		to, err = v4.Connect(context.Background(), cfg.ToServer)
+	}
 	if err != nil {
 		fmt.Printf("Could not connect to ToServer: %v\n", err)
 		os.Exit(1)
 	}
-
-	// for _, s := range streams {
-	// 	tagstr := ""
-	// 	for k, v := range s.T {
-	// 		tagstr = tagstr + fmt.Sprintf("%q=%q,", k, v)
-	// 	}
-	// 	streamdesc := fmt.Sprintf("%s/%s", s.CC, tagstr)
-	// 	cnt, err := Count(from, s.CC, s.T, starttime, endtime)
-	// 	if err != nil {
-	// 		fmt.Printf("ABORT, when counting %s, error:\n %v\n", streamdesc, err)
-	// 		os.Exit(1)
-	// 	}
-	// 	fmt.Printf("%s has %d points\n", streamdesc, cnt)
-	// }
 
 	streamcounts := []uint64{}
 	streamshz := []*v4.Stream{}
