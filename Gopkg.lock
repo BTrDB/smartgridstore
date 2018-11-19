@@ -20,7 +20,7 @@
     "internal/mprovider",
     "internal/rez"
   ]
-  revision = "28e3df6c5766a3ceda98b23412479dcdd35c0784"
+  revision = "ec19b03ba890663eff54f381fd9a3328c33eeced"
 
 [[projects]]
   branch = "master"
@@ -29,7 +29,7 @@
     "accounts",
     "keys"
   ]
-  revision = "68ef900b66a241b8190c9d21db169f5d95f9fbec"
+  revision = "641bf5061387f874a8c69756de094e5a9c394687"
 
 [[projects]]
   branch = "master"
@@ -53,13 +53,13 @@
   branch = "master"
   name = "github.com/coreos/etcd"
   packages = ["clientv3"]
-  revision = "7a759c18d294698f537f8be91927354818a71e51"
+  revision = "83304cfc808cf6303d48c45a696f169fae422e68"
 
 [[projects]]
   name = "github.com/coreos/go-systemd"
   packages = ["journal"]
-  revision = "39ca1b05acc7ad1220e09f133283b8859a8b71ab"
-  version = "v17"
+  revision = "9002847aa1425fb6ac49077c0a630b3b67e0fbfd"
+  version = "v18"
 
 [[projects]]
   name = "github.com/coreos/pkg"
@@ -253,7 +253,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "bcb74de08d37a417cb6789eec1d6c810040f0470"
+  revision = "7e9e6cabbd393fc208072eedef99188d0ce788b6"
 
 [[projects]]
   branch = "master"
@@ -313,7 +313,7 @@
     "raft",
     "raft/raftpb"
   ]
-  revision = "7a759c18d294698f537f8be91927354818a71e51"
+  revision = "83304cfc808cf6303d48c45a696f169fae422e68"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -359,7 +359,7 @@
     "ssh",
     "ssh/terminal"
   ]
-  revision = "0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb"
+  revision = "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06"
 
 [[projects]]
   branch = "master"
@@ -373,7 +373,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "49bb7cea24b1df9410e1712aa6433dae904ff66a"
+  revision = "c10e9556a7bc0e7c942242b606f0acf024ad5d6a"
 
 [[projects]]
   branch = "master"
@@ -382,7 +382,7 @@
     "unix",
     "windows"
   ]
-  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
+  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -412,7 +412,7 @@
     "googleapis/api/annotations",
     "googleapis/rpc/status"
   ]
-  revision = "af9cb2a35e7f169ec875002c1829c9b315cddc04"
+  revision = "c830210a61dfaa790e1920f8d0470fc27bc2efbe"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -445,8 +445,8 @@
     "status",
     "tap"
   ]
-  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
-  version = "v1.15.0"
+  revision = "2e463a05d100327ca47ac218281906921038fd95"
+  version = "v1.16.0"
 
 [[projects]]
   branch = "v4"
@@ -466,8 +466,8 @@
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v1"
   packages = ["."]
-  revision = "2af8bbdea9e99e83b3ac400d8f6b6d1b8cbbf338"
-  version = "v1.0.25"
+  revision = "007b75a044e968336a69a6c0c617251ab62ac14c"
+  version = "v1.0.26"
 
 [[projects]]
   name = "gopkg.in/cheggaaa/pb.v2"
