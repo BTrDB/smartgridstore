@@ -10,11 +10,11 @@ export OSDBASE=$DEVMACHINE_BASE/ceph
 export ETCDBASE=$DEVMACHINE_BASE/etcd
 
 # which version of BTrDB and tools to install
-export VERSION=4.15.4
+export VERSION=4.15.5
 
 # pick which branch to use
-export PREFIX=""
-#export PREFIX="dev-"
+#export PREFIX=""
+export PREFIX="dev-"
 
 # on OSX we can't volume mount in storage because
 # the filesystem isn't compatible. This uses storage inside
