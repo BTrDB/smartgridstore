@@ -35,6 +35,7 @@ export JOURNALPOOL=btrdbjournal
 export PLOTTER_PORT=8888
 # the port on the host to bind the BTrDB API to
 export API_GRPC_PORT=4410
+export API_SECURE_GRPC_PORT=4411
 # the port on the host to bind the HTTP BTrDB API to
 export API_HTTP_PORT=9000
 

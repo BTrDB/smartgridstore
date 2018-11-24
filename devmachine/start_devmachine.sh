@@ -304,6 +304,7 @@ OPUT=$(docker run -d \
   --net ${DOCKERNET} \
   --restart always \
   -p ${API_GRPC_PORT}:4410 \
+  -p ${API_SECURE_GRPC_PORT}:4411 \
   -p ${API_HTTP_PORT}:9000 \
   --ip ${SUB24}.27 \
   -e ETCD_ENDPOINT=http://${ETCD_ENDPOINT} \
