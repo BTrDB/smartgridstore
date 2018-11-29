@@ -203,7 +203,13 @@ func main() {
 			serial := strings.SplitN(identifier, ".", 3)[2]
 			uuids = make([]uuid.UUID, 0, len(upmuparser.STREAMS))
 			for _, canonical := range upmuparser.STREAMS {
-				uu := uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s", identifier, canonical)))
+				var uu uuid.UUID
+				ep, ok := dev.Metadata["epoch"]
+				if ok {
+					uu = uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s.%s", identifier, canonical, ep)))
+				} else {
+					uu = uuid.NewSHA1(INGESTER_SPACE, []byte(fmt.Sprintf("%s.%s", identifier, canonical)))
+				}
 				uuids = append(uuids, uu)
 			}
 			wg.Add(1)
@@ -224,11 +230,6 @@ func main() {
 }
 
 func startProcessLoop(ctx context.Context, serial_number string, alias string, uuids []uuid.UUID, dev *manifest.ManifestDevice, alivePtr *bool, wg *sync.WaitGroup) {
-	mgo_addr := os.Getenv("MONGO_ADDR")
-	if mgo_addr == "" {
-		mgo_addr = "localhost:27017"
-	}
-
 	process_loop(ctx, alivePtr, serial_number, alias, uuids, dev, btrdbconn)
 
 	wg.Done()
