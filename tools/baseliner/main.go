@@ -134,7 +134,7 @@ func updateWorkerSet(number int) {
 func beginStream(ctx context.Context, db *btrdb.BTrDB) {
 	uu := uuid.NewRandom()
 	collection := fmt.Sprintf("sim/%06x/%16x", gsetcode, uint64(rand.Int63()))
-	stream, err := db.Create(context.Background(), uu, collection, nil, nil)
+	stream, err := db.Create(context.Background(), uu, collection, btrdb.M{"name": "stream"}, nil)
 	if err != nil {
 		panic(err)
 	}
