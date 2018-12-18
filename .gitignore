@@ -43,3 +43,5 @@ tools/internal_use/gepproto/
 tools/internal_use/recovertool/recovertool
 tools/internal_use/timelist/
 tools/internal_use/verlist/
+devmachine/cert
+devmachine/nwcert

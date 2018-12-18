@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -235,7 +236,7 @@ func startProcessLoop(ctx context.Context, serial_number string, alias string, u
 	wg.Done()
 }
 
-func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB, feedback chan int) {
+func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser.Sync_Output, getValue upmuparser.InsertGetter, startTime int64, bc *btrdb.BTrDB) int {
 	var sampleRate = output.SampleRate()
 	var numPoints = int((1000.0 / sampleRate) + 0.5)
 	var timeDelta = float64(sampleRate) * 1000000 // convert to nanoseconds
@@ -246,22 +247,19 @@ func insert_stream(ctx context.Context, stream *btrdb.Stream, output *upmuparser
 		points[i].Value = getValue(i, output)
 	}
 
-	var done bool
-	for !done {
+	for {
 		err := stream.Insert(ctx, points)
-		done = true
 		if err == nil {
-			feedback <- 0
+			return 0
 		} else {
 			fmt.Printf("Error inserting data: %v\n", err)
 			switch btrdb.ToCodedError(err).Code {
 			case bte.ResourceDepleted:
-				done = false
-				time.Sleep(5 * time.Second)
+				time.Sleep(30 * time.Second)
 			case bte.BadValue:
-				feedback <- 0
+				return 0
 			default:
-				feedback <- 1
+				return 1
 			}
 		}
 	}
@@ -286,14 +284,18 @@ func process(ctx context.Context, sernum string, alias string, streams []*btrdb.
 	var timeArr [6]int32
 	var i int
 	var j int
-	var numsent int
 	var timestamp int64
-	var feedback chan int
 	var success bool
 	var igs []upmuparser.InsertGetter
 	var ig upmuparser.InsertGetter
 
+	todolist := []string{}
 	for objname, _ := range todo {
+		todolist = append(todolist, objname)
+	}
+	sort.Strings(todolist)
+
+	for _, objname := range todolist {
 		parts := strings.SplitN(objname, ".", 3)
 		if len(parts) != 3 {
 			fmt.Printf("Invalid object name %s\n", parts)
@@ -318,8 +320,7 @@ func process(ctx context.Context, sernum string, alias string, streams []*btrdb.
 
 		success = true
 		parsed, err = upmuparser.ParseSyncOutArray(rawdata)
-		feedback = make(chan int)
-		numsent = 0
+		pts := make([][]btrdb.RawPoint, len(streams))
 		for i = 0; i < len(parsed); i++ {
 			synco = parsed[i]
 			if synco == nil {
@@ -346,7 +347,7 @@ func process(ctx context.Context, sernum string, alias string, streams []*btrdb.
 				}
 			}
 			timeArr = synco.Times()
-			if timeArr[0] < 2010 || timeArr[0] > 2020 {
+			if timeArr[0] < 2010 || timeArr[0] > 2025 {
 				// if the year is outside of this range things must have gotten corrupted somehow
 				fmt.Printf("Rejecting bad date record for %v: year is %v\n", alias, timeArr[0])
 				continue
@@ -358,20 +359,45 @@ func process(ctx context.Context, sernum string, alias string, streams []*btrdb.
 					fmt.Printf("Warning: data for a stream includes stream %s, but stream was not provided. Dropping data for that stream...\n", upmuparser.STREAMS[j])
 					continue
 				}
-				go insert_stream(ctx, streams[j], synco, ig, timestamp, bc, feedback)
-				numsent++
+				//---
+				{
+					var sampleRate = synco.SampleRate()
+					var numPoints = int((1000.0 / sampleRate) + 0.5)
+					var timeDelta = float64(sampleRate) * 1000000 // convert to nanoseconds
+
+					for i := 0; i < numPoints; i++ {
+						pts[j] = append(pts[j], btrdb.RawPoint{
+							Time:  timestamp + int64((float64(i)*timeDelta)+0.5),
+							Value: ig(i, synco),
+						})
+					}
+				}
+				//---
 			}
 		}
-		for j = 0; j < numsent; j++ {
-			if <-feedback == 1 {
-				fmt.Printf("Warning: data for a stream could not be sent for uPMU %v (serial=%v)\n", alias, sernum)
-				success = false
+
+		for idx, stream := range streams {
+		errloop:
+			for {
+				err := stream.Insert(ctx, pts[idx])
+				if err == nil {
+					break errloop
+				} else {
+					fmt.Printf("Error inserting data: %v\n", err)
+					switch btrdb.ToCodedError(err).Code {
+					case bte.ResourceDepleted:
+						time.Sleep(30 * time.Second)
+					case bte.BadValue:
+						break errloop
+					default:
+						panic(err)
+					}
+				}
 			}
 		}
 		fmt.Printf("Finished sending %v for uPMU %v (serial=%v)\n", filename, alias, sernum)
 
 		if success {
-
 			fmt.Printf("Removing %v for uPMU %v (serial=%v) from generation list\n", filename, alias, sernum)
 			rh.RmOmapKeys(oid, []string{objname})
 
