@@ -12,7 +12,7 @@ import (
 
 //go:generate go-bindata -o templates.go -prefix ../manifest_templates ../manifest_templates/
 
-const PackageVersion = "4.15.3"
+const PackageVersion = "4.15.8"
 
 func main() {
 	app := cli.NewApp()
