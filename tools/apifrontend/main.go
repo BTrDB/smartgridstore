@@ -180,7 +180,7 @@ func ProxyGRPCSecure(laddr string) *tls.Config {
 
 	cfg, err := certutils.GetAPIConfig(etcdClient)
 	if cfg == nil {
-		fmt.Printf("TLS config is incomplete (%s), disabling secure endpoints\n", err)
+		fmt.Printf("TLS config is incomplete (%v), disabling secure endpoints\n", err)
 		return nil
 	}
 
